@@ -1,32 +1,28 @@
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// server/server.js
+const express = require("express");
+const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Fixed voice + language
-const FIXED_VOICE = "verse";
-const FIXED_LANG  = "en";
-
-app.use(express.json());
+// Serve static files from /public
 app.use(express.static(path.join(__dirname, "../public")));
 
-app.post("/session", (req, res) => {
-  console.log(`🎤 Session started → Voice: ${FIXED_VOICE}, Lang: ${FIXED_LANG}`);
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// Session endpoint (placeholder – adjust as needed for your ASR/keys)
+app.get("/session", (req, res) => {
   res.json({
-    client_secret: { value: process.env.OPENAI_API_KEY || "fake-token" },
-    model: "gpt-4o-realtime-preview",
-    voice: FIXED_VOICE,
-    language: FIXED_LANG
+    model: "gpt-4o-realtime-preview-2024-12-17",
+    voice: "verse",
+    lang: "en",
   });
 });
 
-app.get("/health", (req, res) => { res.send("OK"); });
-
+// Start server on Fly’s assigned PORT (fallback to 3000 locally)
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
