@@ -19,14 +19,12 @@ app.post("/session", async (req, res) => {
       })
     });
 
-    const raw = await r.text();
-    console.log("OpenAI session response:", raw); // debug logging
-
-    const data = JSON.parse(raw);
+    const data = await r.json();
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy"
+      voice: "alloy",
+      deepgramKey: process.env.DEEPGRAM_API_KEY // keep this for now
     });
   } catch (e) {
     console.error("Session error:", e);
