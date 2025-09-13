@@ -1,5 +1,4 @@
 import express from "express";
-import fetch from "node-fetch";
 
 const app = express();
 app.use(express.static("public"));
@@ -25,10 +24,10 @@ app.post("/session", async (req, res) => {
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
       voice: "alloy",
-      deepgramKey: process.env.DEEPGRAM_API_KEY
+      deepgramKey: process.env.DEEPGRAM_API_KEY // keep this for now
     });
   } catch (e) {
-    console.error(e);
+    console.error("Session error:", e);
     res.status(500).json({ error: "session failed" });
   }
 });
