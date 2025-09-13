@@ -13,20 +13,18 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "nova",  // 🔒 locked to Nova
+        voice: "alloy",
         instructions:
           "You are an AI voice assistant. ALWAYS respond in English. Never default to Spanish. If the user speaks another language, translate it and reply only in English."
       })
     });
 
-    const raw = await r.text();
-    console.log("OpenAI session response:", raw); // debug log
-
-    const data = JSON.parse(raw);
+    const data = await r.json();
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "nova"   // return Nova explicitly
+      voice: "alloy",
+      deepgramKey: process.env.DEEPGRAM_API_KEY // keep this for now
     });
   } catch (e) {
     console.error("Session error:", e);
