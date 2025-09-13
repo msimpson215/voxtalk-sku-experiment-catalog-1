@@ -1,28 +1,34 @@
-// server/server.js
 const express = require("express");
 const path = require("path");
-
 const app = express();
 
-// Serve static files from /public
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.json());
 
-// Health check endpoint
+// Serve static frontend
+const publicPath = path.join(__dirname, "../public");
+app.use(express.static(publicPath));
+
+// Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Session endpoint (placeholder – adjust as needed for your ASR/keys)
-app.get("/session", (req, res) => {
+// Root always serves index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(publicPath, "index.html"));
+});
+
+// Session endpoint – static JSON shape
+app.post("/session", (req, res) => {
   res.json({
-    model: "gpt-4o-realtime-preview-2024-12-17",
-    voice: "verse",
-    lang: "en",
+    client_secret: { value: process.env.OPENAI_API_KEY || "missing_key" },
+    model: "gpt-4o-realtime-preview",   // 🔄 rolled back to plain preview
+    voice: "alloy",
+    input_language: "en"
   });
 });
 
-// Start server on Fly’s assigned PORT (fallback to 3000 locally)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`VoxTalk server listening on port ${PORT}`);
 });
