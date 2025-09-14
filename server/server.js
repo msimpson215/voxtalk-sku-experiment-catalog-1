@@ -1,8 +1,12 @@
 import express from "express";
+import fetch from "node-fetch";
 
 const app = express();
+
+// Serve everything in "public" (index.html, CSS, images, etc.)
 app.use(express.static("public"));
 
+// Session endpoint for OpenAI Realtime
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -13,21 +17,17 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "alloy",
-        instructions:
-          "You are an AI voice assistant. ALWAYS respond in English. Never default to Spanish. If the user speaks another language, translate it and reply only in English."
+        voice: "alloy" // Default voice (can change to nova, echo, etc.)
       })
     });
-
     const data = await r.json();
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy",
-      deepgramKey: process.env.DEEPGRAM_API_KEY // keep this for now
+      voice: "alloy"
     });
   } catch (e) {
-    console.error("Session error:", e);
+    console.error(e);
     res.status(500).json({ error: "session failed" });
   }
 });
