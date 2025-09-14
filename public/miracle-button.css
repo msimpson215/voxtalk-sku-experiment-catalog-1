@@ -1,5 +1,4 @@
-/* miracle-button.css */
-/* Simulated ChatGPT feel: calm when idle, energetic when talking */
+/* ChatGPT-style button feel */
 
 .voice-button {
   width: 80px;
@@ -18,12 +17,12 @@
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-/* Idle = slow, calm breathing */
+/* Idle = calm, slow pulse */
 .voice-button.idle {
   animation: idleBreath 3s infinite ease-in-out;
 }
 
-/* Talking = quicker, more energy */
+/* Talking = quicker, stronger pulse */
 .voice-button.talking {
   animation: talkingBreath 1.2s infinite ease-in-out;
   background: radial-gradient(circle at center, #10a37f 0%, #13c296 100%);
