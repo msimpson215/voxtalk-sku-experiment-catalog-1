@@ -1,8 +1,7 @@
 import express from "express";
+import fetch from "node-fetch"; // keep if that’s what worked before
 
 const app = express();
-
-// Serve static assets (HTML, CSS, etc.)
 app.use(express.static("public"));
 
 // Session endpoint for OpenAI Realtime
