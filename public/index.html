@@ -2,84 +2,57 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>VoxTalk (Miracle Files)</title>
-  <!-- Link to button styles -->
+  <title>Minimal VoxTalk (Miracle Files)</title>
+  <!-- Link the new CSS -->
   <link rel="stylesheet" href="miracle-button.css">
 </head>
 <body>
-  <!-- ChatGPT-style voice button -->
-  <button id="voiceBtn" class="voice-button idle">Start</button>
+  <!-- Round ChatGPT-style button -->
+  <button id="startBtn" class="voice-button idle">Start</button>
 
-  <!-- Remote audio -->
   <audio id="remote" autoplay playsinline></audio>
 
   <script>
-    const btn = document.getElementById("voiceBtn");
+    const startBtn = document.getElementById("startBtn");
     const rtAudio = document.getElementById("remote");
 
-    let pc, dc, micStream, micTrack, active = false;
-
-    async function startSession() {
-      btn.textContent = "Stop";
-      btn.className = "voice-button talking";
-      active = true;
+    async function init() {
+      startBtn.disabled = true;
+      startBtn.className = "voice-button talking";
 
       // Request session from server.js
       const s = await fetch("/session", { method: "POST" });
       const { client_secret, model, voice } = await s.json();
 
       // WebRTC connection
-      pc = new RTCPeerConnection();
+      const pc = new RTCPeerConnection();
       pc.ontrack = (ev) => { rtAudio.srcObject = ev.streams[0]; };
 
       // Data channel
-      dc = pc.createDataChannel("oai-events");
+      const dc = pc.createDataChannel("oai-events");
 
       // Offer → OpenAI
       const offer = await pc.createOffer({ offerToReceiveAudio: true });
       await pc.setLocalDescription(offer);
       const r = await fetch(`https://api.openai.com/v1/realtime?model=${model}&voice=${voice}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${client_secret.value}`,
-          "Content-Type": "application/sdp"
-        },
+        headers: { Authorization: `Bearer ${client_secret.value}`, "Content-Type": "application/sdp" },
         body: offer.sdp
       });
       const answer = { type: "answer", sdp: await r.text() };
       await pc.setRemoteDescription(answer);
 
       // Mic input
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micTrack = micStream.getTracks()[0];
-      pc.addTrack(micTrack, micStream);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const micTrack = stream.getTracks()[0];
+      pc.addTrack(micTrack, stream);
 
-      dc.onopen = () => console.log("Data channel open");
+      dc.onopen = () => {
+        console.log("Data channel open, ready");
+      };
     }
 
-    function stopSession() {
-      btn.textContent = "Start";
-      btn.className = "voice-button idle";
-      active = false;
-
-      // Kill mic
-      if (micTrack) micTrack.stop();
-      if (micStream) micStream.getTracks().forEach(t => t.stop());
-
-      // Kill peer connection
-      if (pc) pc.close();
-
-      // Kill remote audio
-      rtAudio.srcObject = null;
-    }
-
-    btn.onclick = async () => {
-      if (!active) {
-        await startSession();
-      } else {
-        stopSession();
-      }
-    };
+    startBtn.onclick = init;
   </script>
 </body>
 </html>
