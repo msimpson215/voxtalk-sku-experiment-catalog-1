@@ -1,53 +1,41 @@
 /* miracle-button.css */
-/* ChatGPT-style circular button with pulse animations */
+/* Simulated ChatGPT feel: calm when idle, energetic when talking */
 
 .voice-button {
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: none;
   outline: none;
   cursor: pointer;
-  background: #10a37f; /* ChatGPT teal */
+  background: radial-gradient(circle at center, #10a37f 0%, #0e8f6d 100%);
   color: white;
-  font-size: 22px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-/* Idle state → slow pulse */
+/* Idle = slow, calm breathing */
 .voice-button.idle {
-  animation: slowPulse 2.5s infinite;
+  animation: idleBreath 3s infinite ease-in-out;
 }
 
-/* Talking state → faster pulse */
+/* Talking = quicker, more energy */
 .voice-button.talking {
-  animation: fastPulse 1.2s infinite;
-}
-
-/* Thinking state → subtle glow */
-.voice-button.thinking {
-  box-shadow: 0 0 15px rgba(16, 163, 127, 0.6);
-  animation: slowPulse 2s infinite;
-}
-
-/* Paused → gray, no animation */
-.voice-button.paused {
-  background: #555;
-  animation: none;
+  animation: talkingBreath 1.2s infinite ease-in-out;
+  background: radial-gradient(circle at center, #10a37f 0%, #13c296 100%);
 }
 
 /* Animations */
-@keyframes slowPulse {
+@keyframes idleBreath {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.85; }
+  50% { transform: scale(1.06); opacity: 0.9; }
 }
 
-@keyframes fastPulse {
+@keyframes talkingBreath {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.15); opacity: 0.7; }
+  50% { transform: scale(1.15); opacity: 0.85; }
 }
-
