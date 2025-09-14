@@ -1,7 +1,8 @@
 import express from "express";
-import fetch from "node-fetch"; // keep if that’s what worked before
 
 const app = express();
+
+// Serve everything in "public" (HTML, CSS, JS, etc.)
 app.use(express.static("public"));
 
 // Session endpoint for OpenAI Realtime
@@ -18,6 +19,7 @@ app.post("/session", async (req, res) => {
         voice: "alloy"
       })
     });
+
     const data = await r.json();
     res.json({
       client_secret: data.client_secret,
@@ -25,10 +27,10 @@ app.post("/session", async (req, res) => {
       voice: "alloy"
     });
   } catch (e) {
-    console.error(e);
+    console.error("Session creation failed:", e);
     res.status(500).json({ error: "session failed" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on " + PORT));
+app.listen(PORT, () => console.log("✅ Server running on " + PORT));
