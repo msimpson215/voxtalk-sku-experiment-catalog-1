@@ -1,1 +1,53 @@
+/* miracle-button.css */
+/* ChatGPT-style circular button with pulse animations */
+
+.voice-button {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: #10a37f; /* ChatGPT teal */
+  color: white;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+/* Idle state → slow pulse */
+.voice-button.idle {
+  animation: slowPulse 2.5s infinite;
+}
+
+/* Talking state → faster pulse */
+.voice-button.talking {
+  animation: fastPulse 1.2s infinite;
+}
+
+/* Thinking state → subtle glow */
+.voice-button.thinking {
+  box-shadow: 0 0 15px rgba(16, 163, 127, 0.6);
+  animation: slowPulse 2s infinite;
+}
+
+/* Paused → gray, no animation */
+.voice-button.paused {
+  background: #555;
+  animation: none;
+}
+
+/* Animations */
+@keyframes slowPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
+}
+
+@keyframes fastPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
 
