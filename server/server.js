@@ -2,7 +2,7 @@ import express from "express";
 
 const app = express();
 
-// Serve public folder (HTML, CSS, JS, etc.)
+// Serve public folder (HTML, CSS, etc.)
 app.use(express.static("public"));
 
 // Session endpoint for OpenAI Realtime
