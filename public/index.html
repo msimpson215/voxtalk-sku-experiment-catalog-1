@@ -2,228 +2,167 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Minimal Pulse Button Demo</title>
+  <title>VoxTalk Cloud Button Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
       margin:0; font-family:system-ui,sans-serif;
-      min-height:100vh;
-      background: radial-gradient(circle at 55% 18%, #e0e7ff 8%, #60a5fa 30%, #1e3a8a 95%);
+      min-height:100vh; background: radial-gradient(circle at 55% 18%, #e0e7ff 10%, #60a5fa 36%, #1e3a8a 98%);
       display:flex; flex-direction:column; align-items:center; justify-content:center;
     }
-    .vox-branding {
-      font-size:2rem; font-weight:700; letter-spacing:1px;
-      color:#1e40af; margin-bottom:32px; margin-top:24px;
+    .vox-label {
+      font-size:1.05rem; font-weight:450; letter-spacing:0.5px;
+      color:#fff; margin-bottom:32px; margin-top:18px;
       user-select: none;
+      opacity:0.85; transition: opacity 0.25s;
+      text-shadow:0 2px 8px #2563eb44;
     }
-    .breath-container {
+    .cloud-container {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:300px;
+      min-height:340px;
     }
-    #vox-breath-btn {
-      width: 120px;
-      height: 120px;
+    #cloud-btn {
+      width: 210px;
+      height: 210px;
       border-radius: 50%;
-      background: radial-gradient(circle at 50% 60%, #0a174e 90%, #2563eb 100%);
-      box-shadow: 0 8px 32px 0 rgba(37,99,235,0.28);
-      display: flex;
-      align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 60%, #174ca1 82%, #2563eb 100%);
+      box-shadow: 0 16px 64px 0 rgba(37,99,235,0.32);
       position: relative;
       cursor: pointer;
       outline: none;
       border: none;
-      transition: box-shadow 0.22s, background 0.22s, transform 0.22s;
+      display: flex;
+      align-items: center; justify-content: center;
       z-index: 2;
+      transition: box-shadow 0.22s, background 0.22s, transform 0.22s;
+      overflow: hidden;
     }
-    #vox-breath-btn.idle {
-      animation: breath-idle 2.6s ease-in-out infinite;
-    }
-    #vox-breath-btn.listening {
-      animation: breath-listening 1.5s ease-in-out infinite;
-      box-shadow: 0 0 0 0px #60a5fa55, 0 0 20px 4px #2563eb95;
-    }
-    #vox-breath-btn.speaking {
-      animation: breath-speaking 0.9s ease-in-out infinite;
-      box-shadow: 0 0 0 0px #93c5fd88, 0 0 30px 8px #2563ebcc;
-    }
-    @keyframes breath-idle {
-      0%   { transform: scale(1); box-shadow: 0 8px 32px rgba(37,99,235,.28);}
-      50%  { transform: scale(1.08); box-shadow: 0 12px 40px 8px #60a5fa44;}
-      100% { transform: scale(1); box-shadow: 0 8px 32px rgba(37,99,235,.28);}
-    }
-    @keyframes breath-listening {
-      0%   { transform: scale(1);}
-      50%  { transform: scale(1.12);}
-      100% { transform: scale(1);}
-    }
-    @keyframes breath-speaking {
-      0%   { transform: scale(1);}
-      50%  { transform: scale(1.17);}
-      100% { transform: scale(1);}
-    }
-    .vox-logo {
-      width: 56px; height: 56px;
+    /* Cloud swirl overlay */
+    #cloud-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
       border-radius: 50%;
-      background: radial-gradient(circle at 52% 50%, #0a174e 95%, #2563eb 100%);
+      opacity: 0.82;
+      background: conic-gradient(from 0deg, #f7fafc 8%, #bde0fe 18%, #60a5fa 39%, #fff 57%, #bde0fe 82%, #60a5fa 94%, #f7fafc 100%);
+      animation: swirl-clouds 3.2s linear infinite;
+      pointer-events: none;
+      filter: blur(10px);
+      z-index: 1;
+      transition: animation 0.22s;
+    }
+    #cloud-btn.listening::before {
+      animation: swirl-clouds-listen 1.3s linear infinite;
+    }
+    #cloud-btn.speaking::before {
+      animation: swirl-clouds-speak 0.7s linear infinite;
+    }
+    @keyframes swirl-clouds {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    @keyframes swirl-clouds-listen {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    @keyframes swirl-clouds-speak {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    .cloud-logo {
+      width: 85px; height: 85px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 52% 50%, #174ca1 95%, #2563eb 100%);
       display: flex; align-items: center; justify-content: center;
-      font-weight: bold; font-size: 1rem;
-      color: white; opacity: 0.97;
+      font-weight: bold; font-size: 1.1rem;
+      color: #fff; opacity: 0.95;
       box-shadow: 0 2px 8px 0 #60a5fa33;
       user-select: none;
       pointer-events: none;
       z-index: 3;
       letter-spacing: 1px;
+      mix-blend-mode: lighten;
     }
-    /* Info icon (optional) */
-    .info-btn {
-      position:absolute;
-      right:-28px; top:50%;
-      transform: translateY(-50%);
-      background:rgba(255,255,255,0.97);
-      border-radius:50%;
-      box-shadow:0 2px 8px #60a5fa29;
-      border:none;
-      width:32px; height:32px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:1.2rem;
-      color:#2563eb;
-      cursor:pointer;
-      z-index:10;
-      opacity:0.8;
-      transition: background 0.18s;
-    }
-    .info-btn:hover { background:#e0e7ff; opacity:1; }
-    .info-modal {
-      display:none;
-      position:fixed;
-      left:0; top:0; width:100vw; height:100vh;
-      background:rgba(60,130,246,0.09);
-      align-items:center; justify-content:center;
-      z-index:99;
-    }
-    .info-modal.show { display:flex; }
-    .info-content {
-      background:white;
-      border-radius:16px;
-      padding:36px;
-      box-shadow:0 4px 24px #1e40af33;
-      font-size:1.15rem;
-      color:#222;
-      max-width:320px;
-      text-align:center;
-    }
-    .info-close {
-      margin-top:18px;
-      padding:7px 18px;
-      border:none; border-radius:7px;
-      background:#60a5fa;
-      color:white; font-size:1rem;
-      cursor:pointer;
-      font-weight:600;
-    }
-    .vox-label {
-      margin-top:24px;
-      font-size:1.18rem;
-      color:#2563eb;
-      background: rgba(255,255,255,0.98);
-      border-radius: 11px;
-      padding: 8px 22px;
-      box-shadow: 0 2px 8px #60a5fa09;
-      min-width: 130px;
+    /* Small "click here" hint */
+    .cloud-hint {
+      margin-top: 12px;
+      font-size: 0.97rem;
+      color: #e0e7ff;
+      opacity: 0.85;
+      background: none;
       text-align: center;
-      font-weight: 500;
-      letter-spacing: 0.3px;
-      transition: background 0.2s, color 0.2s;
       user-select: none;
+      letter-spacing: 0.2px;
+      transition: opacity 0.25s;
     }
     .powered-by {
       position:fixed;
-      right: 22px; bottom: 16px;
-      font-size: 0.98rem;
-      color: #444;
-      opacity: 0.65;
+      right: 20px; bottom: 12px;
+      font-size: 0.89rem;
+      color: #fff;
+      opacity: 0.45;
       background: none;
       text-align: right;
       user-select: none;
       z-index: 20;
       letter-spacing: 0.5px;
+      font-weight:300;
     }
     @media (max-width: 600px) {
-      .vox-branding { font-size:1.17rem; margin-bottom:16px;}
-      #vox-breath-btn { width: 80px; height: 80px;}
-      .vox-logo { width: 32px; height: 32px; font-size: 0.8rem;}
-      .info-btn { width:24px; height:24px; font-size:1rem; right:-18px;}
-      .info-content { padding:16px; font-size:1rem;}
-      .vox-label { font-size: 0.95rem; min-width:80px; padding: 5px 12px; margin-top:14px;}
+      .vox-label { font-size:0.85rem; margin-bottom:16px;}
+      #cloud-btn { width: 120px; height: 120px;}
+      .cloud-logo { width: 48px; height: 48px; font-size: 0.7rem;}
+      .cloud-hint { font-size: 0.89rem; margin-top: 7px;}
     }
   </style>
 </head>
 <body>
-  <div class="vox-branding">VoxTalk</div>
-  <div class="breath-container">
-    <button id="vox-breath-btn" class="idle" tabindex="0" aria-label="Talk to VoxTalk AI">
-      <div class="vox-logo">VoxTalk</div>
-      <button class="info-btn" id="infoBtn" title="How to use VoxTalk">?</button>
+  <div class="vox-label" id="voxLabel">Talk to VoxTalk</div>
+  <div class="cloud-container">
+    <button id="cloud-btn" class="idle" tabindex="0" aria-label="Talk to VoxTalk AI">
+      <div class="cloud-logo"></div>
     </button>
-    <div class="vox-label" id="voxLabel">Talk to VoxTalk</div>
+    <div class="cloud-hint" id="cloudHint">click here</div>
   </div>
-  <div class="powered-by">Powered by VoxTalk. Your brand, your AI.</div>
-  <!-- Info modal -->
-  <div class="info-modal" id="infoModal">
-    <div class="info-content">
-      <b>How to use VoxTalk</b><br><br>
-      Tap the blue circle and start talking. VoxTalk listens and responds.<br>
-      No typing needed.<br><br>
-      <button class="info-close" id="infoClose">Close</button>
-    </div>
-  </div>
+  <div class="powered-by">Powered by VoxTalk</div>
   <script>
-    const breathBtn = document.getElementById('vox-breath-btn');
+    const cloudBtn = document.getElementById('cloud-btn');
     const voxLabel = document.getElementById('voxLabel');
-    const infoBtn = document.getElementById('infoBtn');
-    const infoModal = document.getElementById('infoModal');
-    const infoClose = document.getElementById('infoClose');
+    const cloudHint = document.getElementById('cloudHint');
     let state = "idle";
 
     function setState(newState) {
-      breathBtn.classList.remove('idle', 'listening', 'speaking');
+      cloudBtn.classList.remove('listening', 'speaking');
       state = newState;
       switch (newState) {
         case "idle":
-          breathBtn.classList.add('idle');
-          voxLabel.textContent = "Talk to VoxTalk";
-          voxLabel.style.opacity = "1";
+          voxLabel.style.opacity = "0.85";
+          cloudHint.style.opacity = "0.85";
           break;
         case "listening":
-          breathBtn.classList.add('listening');
-          voxLabel.style.opacity = "0"; // Hide label while listening
+          cloudBtn.classList.add('listening');
+          voxLabel.style.opacity = "0";
+          cloudHint.style.opacity = "0";
           break;
         case "speaking":
-          breathBtn.classList.add('speaking');
-          voxLabel.style.opacity = "0"; // Hide label while speaking
+          cloudBtn.classList.add('speaking');
+          voxLabel.style.opacity = "0";
+          cloudHint.style.opacity = "0";
           break;
       }
     }
 
-    breathBtn.onclick = (e) => {
-      if (e.target === infoBtn) return;
+    cloudBtn.onclick = () => {
       if (state === "idle") {
         setState("listening");
-        setTimeout(() => setState("speaking"), 1200); // simulate AI response after 1.2s
-        setTimeout(() => setState("idle"), 4300); // back to idle after 3s
+        setTimeout(() => {
+          setState("speaking");
+          // Simulate greeting after click (replace with real backend/AI later)
+          setTimeout(() => setState("idle"), 4200);
+        }, 1200);
       } else {
         setState("idle");
       }
-    };
-
-    infoBtn.onclick = (e) => {
-      infoModal.classList.add("show");
-    };
-    infoClose.onclick = () => {
-      infoModal.classList.remove("show");
-    };
-    infoModal.onclick = (e) => {
-      if (e.target === infoModal) infoModal.classList.remove("show");
     };
 
     // Keyboard demo for investors: global event
