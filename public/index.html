@@ -15,9 +15,9 @@
     let pc, micStream, micTrack, active = false;
 
     async function startSession() {
-      startBtn.disabled = true;
-      startBtn.className = "voice-button talking";
       active = true;
+      startBtn.textContent = "Stop";
+      startBtn.className = "voice-button talking";
 
       const s = await fetch("/session", { method: "POST" });
       const { client_secret, model, voice } = await s.json();
@@ -41,14 +41,13 @@
       micTrack = micStream.getTracks()[0];
       pc.addTrack(micTrack, micStream);
 
-      dc.onopen = () => console.log("Data channel open, ready");
-      startBtn.disabled = false;
+      dc.onopen = () => console.log("Data channel open");
     }
 
     function stopSession() {
+      active = false;
       startBtn.textContent = "Start";
       startBtn.className = "voice-button idle";
-      active = false;
 
       // Kill mic
       if (micTrack) micTrack.stop();
@@ -57,16 +56,15 @@
       // Kill peer connection
       if (pc) pc.close();
 
-      // Kill remote audio instantly
+      // 🚨 Kill remote audio instantly
       rtAudio.srcObject = null;
       rtAudio.pause();
       rtAudio.currentTime = 0;
     }
 
-    startBtn.onclick = async () => {
+    startBtn.onclick = () => {
       if (!active) {
-        startBtn.textContent = "Stop";
-        await startSession();
+        startSession();
       } else {
         stopSession();
       }
