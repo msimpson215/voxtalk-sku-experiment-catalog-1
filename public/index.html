@@ -4,25 +4,34 @@
   <meta charset="utf-8" />
   <title>VoxTalk Minimal Cloud Button Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Softer, rounder font from Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Original soft font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
   <style>
     body {
-      margin:0; font-family:'Quicksand','Nunito',system-ui,sans-serif;
+      margin:0; font-family:'Quicksand',system-ui,sans-serif;
       min-height:100vh; width:100vw;
-      background: radial-gradient(circle at 50% 20%, #1e3a8a 0%, #174ca1 10%, #2563eb 40%, #93c5fd 70%, #e0e7ff 100%);
+      background: radial-gradient(circle at 50% 22%, #dbeafe 10%, #93c5fd 40%, #2563eb 80%, #174ca1 100%);
       display:flex; flex-direction:column; align-items:center; justify-content:center;
     }
     .vox-label {
-      font-size:1.5rem; font-family:'Nunito', 'Quicksand', system-ui, sans-serif;
-      font-weight:700; letter-spacing:0.04em;
-      color:#fff; margin-bottom:14px; margin-top:0px;
+      font-size:2rem; font-family:'Quicksand', system-ui, sans-serif;
+      font-weight:700; letter-spacing:0.06em;
+      color:#2563eb; margin-bottom:14px; margin-top:0px;
       user-select: none;
       opacity:0.97; transition: opacity 0.25s;
-      text-shadow:0 2px 16px #2563eb44;
+      text-shadow:0 2px 14px #dbeafe88;
       border-radius:12px;
-      background:rgba(255,255,255,0.04);
-      padding:6px 22px;
+      background:rgba(255,255,255,0.06);
+      padding:4px 20px 4px 14px;
+      display:inline-block;
+      position:relative;
+    }
+    .vox-label .tm {
+      font-size:0.7rem; font-weight:400;
+      vertical-align:super; margin-left:3px;
+      opacity:0.8;
+      color:#2563eb;
+      position:absolute; top:2px; right:-20px;
     }
     .cloud-container {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -32,8 +41,8 @@
       width: 220px;
       height: 220px;
       border-radius: 50%;
-      background: radial-gradient(circle at 52% 62%, #174ca1 94%, #1e3a8a 100%);
-      box-shadow: 0 24px 110px 0 rgba(37,99,235,0.36);
+      background: radial-gradient(circle at 50% 60%, #174ca1 96%, #2563eb 100%);
+      box-shadow: 0 16px 80px 0 rgba(37,99,235,0.32);
       position: relative;
       cursor: pointer;
       outline: none;
@@ -44,7 +53,7 @@
       transition: box-shadow 0.22s, background 0.22s, transform 0.22s;
       overflow: hidden;
     }
-    /* Soft swirling cloud effect (not a rigid spin, organic) */
+    /* Swirling cloud effect, animated */
     #cloud-btn::before {
       content: "";
       position: absolute;
@@ -54,17 +63,17 @@
       background: conic-gradient(
         from 0deg,
         #fff 6%,
-        #bde0fe 18%,
-        #93c5fd 30%,
-        #dbeafe 38%,
-        #f7fafc 55%,
-        #bde0fe 73%,
+        #bde0fe 20%,
+        #93c5fd 36%,
+        #dbeafe 52%,
+        #f7fafc 68%,
+        #bde0fe 80%,
         #60a5fa 89%,
         #f7fafc 100%
       );
-      animation: swirl-clouds 5.2s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
+      animation: swirl-clouds 4.7s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
       pointer-events: none;
-      filter: blur(15px);
+      filter: blur(14px);
       z-index: 1;
       transition: animation 0.22s;
     }
@@ -76,25 +85,25 @@
     }
     @keyframes swirl-clouds {
       0% { transform: rotate(-2deg);}
-      28% { transform: rotate(7deg);}
-      64% { transform: rotate(-4deg);}
+      30% { transform: rotate(8deg);}
+      60% { transform: rotate(-5deg);}
       100% { transform: rotate(-2deg);}
     }
     @keyframes swirl-clouds-listen {
       0% { transform: rotate(0deg);}
-      40% { transform: rotate(12deg);}
-      80% { transform: rotate(-8deg);}
+      40% { transform: rotate(14deg);}
+      80% { transform: rotate(-10deg);}
       100% { transform: rotate(0deg);}
     }
     @keyframes swirl-clouds-speak {
       0% { transform: rotate(-2deg);}
-      30% { transform: rotate(19deg);}
+      30% { transform: rotate(22deg);}
       100% { transform: rotate(-2deg);}
     }
     .cloud-logo {
-      width: 120px; height: 120px;
+      width: 110px; height: 110px;
       border-radius: 50%;
-      background: radial-gradient(circle at 52% 50%, #174ca1 99%, #2563eb 100%);
+      background: radial-gradient(circle at 52% 50%, #174ca1 97%, #2563eb 100%);
       display: flex; align-items:center; justify-content:center;
       font-weight: 600; font-size: 1.11rem;
       color: #e0e7ff; opacity: 0.98;
@@ -104,53 +113,54 @@
       z-index: 3;
       letter-spacing: 0.7px;
       mix-blend-mode: lighten;
-      font-family:'Quicksand','Nunito',system-ui,sans-serif;
+      font-family:'Quicksand',system-ui,sans-serif;
     }
     /* Tiny hint, only visible when idle */
     .cloud-hint {
-      font-size: 0.8rem;
-      color: #e0e7ff;
-      opacity: 0.7;
-      margin-top: 13px;
-      letter-spacing: 0.16em;
+      font-size: 0.96rem;
+      color: #2563eb;
+      opacity: 0.75;
+      margin-top: 14px;
+      letter-spacing: 0.13em;
       text-align:center;
       transition: opacity 0.22s;
       user-select: none;
-      font-family:'Quicksand','Nunito',system-ui,sans-serif;
+      font-family:'Quicksand',system-ui,sans-serif;
     }
-    #cloud-btn.listening .cloud-hint,
-    #cloud-btn.speaking .cloud-hint {
+    #cloud-btn.listening ~ .cloud-hint,
+    #cloud-btn.speaking ~ .cloud-hint {
       opacity: 0;
     }
     .powered-by {
       position:fixed;
-      right: 20px; bottom: 12px;
-      font-size: 0.93rem;
-      color: #fff;
-      opacity: 0.25;
+      right: 20px; bottom: 16px;
+      font-size: 1.05rem;
+      color: #174ca1;
+      opacity: 0.48;
       background: none;
       text-align: right;
       user-select: none;
       z-index: 20;
       letter-spacing: 0.5px;
-      font-weight:400;
-      font-family:'Quicksand','Nunito',system-ui,sans-serif;
+      font-weight:600;
+      font-family:'Quicksand',system-ui,sans-serif;
     }
     @media (max-width: 600px) {
-      .vox-label { font-size:0.92rem; margin-bottom:7px;}
+      .vox-label { font-size:1rem; margin-bottom:7px;}
       #cloud-btn { width: 95px; height: 95px;}
       .cloud-logo { width: 38px; height: 38px; font-size: 0.6rem;}
-      .cloud-hint { font-size:0.59rem; margin-top:6px;}
+      .cloud-hint { font-size:0.67rem; margin-top:6px;}
+      .powered-by { font-size:0.7rem; right: 8px; bottom: 6px;}
     }
   </style>
 </head>
 <body>
-  <div class="vox-label">VoxTalk</div>
+  <div class="vox-label">VoxTalk<span class="tm">™</span></div>
   <div class="cloud-container">
-    <button id="cloud-btn" class="idle" tabindex="0" aria-label="Start talking with VoxTalk">
+    <button id="cloud-btn" class="idle" tabindex="0" aria-label="Click to talk with VoxTalk">
       <div class="cloud-logo"></div>
     </button>
-    <div class="cloud-hint" id="cloudHint">start</div>
+    <div class="cloud-hint" id="cloudHint">click to talk</div>
   </div>
   <div class="powered-by">Powered by VoxTalk</div>
   <script>
@@ -161,6 +171,11 @@
     function setState(newState) {
       cloudBtn.classList.remove('listening', 'speaking');
       state = newState;
+      if (state === "idle") {
+        cloudHint.style.opacity = "0.75";
+      } else {
+        cloudHint.style.opacity = "0";
+      }
     }
 
     cloudBtn.onclick = () => {
