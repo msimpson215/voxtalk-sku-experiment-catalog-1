@@ -2,199 +2,250 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Minimal Cloud Button Demo</title>
+  <title>VoxTalk Mothership Full Monte Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Original soft font from Google Fonts -->
+  <!-- Professional soft font -->
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
   <style>
     body {
       margin:0; font-family:'Quicksand',system-ui,sans-serif;
       min-height:100vh; width:100vw;
-      background: radial-gradient(circle at 50% 22%, #dbeafe 10%, #93c5fd 40%, #2563eb 80%, #174ca1 100%);
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background: radial-gradient(circle at 50% 20%, #dbeafe 10%, #93c5fd 40%, #1e3a8a 90%);
+      display:flex; align-items:center; justify-content:center;
     }
-    .vox-label {
-      font-size:2rem; font-family:'Quicksand', system-ui, sans-serif;
-      font-weight:700; letter-spacing:0.06em;
-      color:#2563eb; margin-bottom:14px; margin-top:0px;
-      user-select: none;
-      opacity:0.97; transition: opacity 0.25s;
-      text-shadow:0 2px 14px #dbeafe88;
-      border-radius:12px;
-      background:rgba(255,255,255,0.06);
-      padding:4px 20px 4px 14px;
-      display:inline-block;
-      position:relative;
+    .mothership-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .vox-label .tm {
-      font-size:0.7rem; font-weight:400;
-      vertical-align:super; margin-left:3px;
-      opacity:0.8;
-      color:#2563eb;
-      position:absolute; top:2px; right:-20px;
-    }
-    .cloud-container {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:340px;
-    }
-    #cloud-btn {
-      width: 220px;
-      height: 220px;
+    #vox-mothership {
+      width: 180px;
+      height: 180px;
       border-radius: 50%;
-      background: radial-gradient(circle at 50% 60%, #174ca1 96%, #2563eb 100%);
-      box-shadow: 0 16px 80px 0 rgba(37,99,235,0.32);
+      background: radial-gradient(circle at 60% 60%, #2563eb 65%, #1e40af 100%);
+      box-shadow: 0 6px 32px 0 rgba(37,99,235,0.23);
       position: relative;
+      overflow: hidden;
       cursor: pointer;
+      transition: box-shadow 0.2s, background 0.2s;
       outline: none;
       border: none;
       display: flex;
-      align-items: center; justify-content: center;
-      z-index: 2;
-      transition: box-shadow 0.22s, background 0.22s, transform 0.22s;
-      overflow: hidden;
+      align-items: center;
+      justify-content: center;
     }
-    /* Swirling cloud effect, animated */
-    #cloud-btn::before {
+    /* Swirling clouds overlay */
+    #vox-mothership::before {
       content: "";
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      opacity: 0.68;
-      background: conic-gradient(
-        from 0deg,
-        #fff 6%,
-        #bde0fe 20%,
-        #93c5fd 36%,
-        #dbeafe 52%,
-        #f7fafc 68%,
-        #bde0fe 80%,
-        #60a5fa 89%,
-        #f7fafc 100%
-      );
-      animation: swirl-clouds 4.7s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
+      opacity: 0.8;
+      background: conic-gradient(from 0deg, #fff 10%, #bde0fe 30%, #60a5fa 60%, #fff 100%);
+      animation: swirl-idle 2.2s linear infinite;
       pointer-events: none;
-      filter: blur(14px);
+      filter: blur(2.5px);
       z-index: 1;
-      transition: animation 0.22s;
     }
-    #cloud-btn.listening::before {
-      animation: swirl-clouds-listen 2.1s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
-    }
-    #cloud-btn.speaking::before {
-      animation: swirl-clouds-speak 1.0s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
-    }
-    @keyframes swirl-clouds {
-      0% { transform: rotate(-2deg);}
-      30% { transform: rotate(8deg);}
-      60% { transform: rotate(-5deg);}
-      100% { transform: rotate(-2deg);}
-    }
-    @keyframes swirl-clouds-listen {
+    #vox-mothership.speaking::before { animation: swirl-speaking 0.7s linear infinite; }
+    #vox-mothership.listening::before { animation: swirl-listening 1.2s linear infinite; }
+    #vox-mothership.thinking::before { animation: swirl-thinking 2.8s linear infinite; opacity: 0.3; }
+    #vox-mothership.paused::before { animation: none; opacity: 0.2; }
+    @keyframes swirl-idle {
       0% { transform: rotate(0deg);}
-      40% { transform: rotate(14deg);}
-      80% { transform: rotate(-10deg);}
-      100% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
     }
-    @keyframes swirl-clouds-speak {
-      0% { transform: rotate(-2deg);}
-      30% { transform: rotate(22deg);}
-      100% { transform: rotate(-2deg);}
+    @keyframes swirl-listening {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
     }
-    .cloud-logo {
-      width: 110px; height: 110px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 52% 50%, #174ca1 97%, #2563eb 100%);
-      display: flex; align-items:center; justify-content:center;
-      font-weight: 600; font-size: 1.11rem;
-      color: #e0e7ff; opacity: 0.98;
-      box-shadow: 0 2px 8px 0 #60a5fa33;
-      user-select: none;
-      pointer-events: none;
+    @keyframes swirl-speaking {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    @keyframes swirl-thinking {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    /* Sound wave animation (SVG overlay) */
+    .soundwave {
+      position: absolute;
+      top: 54%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px; height: 60px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
       z-index: 3;
-      letter-spacing: 0.7px;
-      mix-blend-mode: lighten;
-      font-family:'Quicksand',system-ui,sans-serif;
     }
-    /* Tiny hint, only visible when idle */
-    .cloud-hint {
-      font-size: 0.96rem;
-      color: #2563eb;
-      opacity: 0.75;
-      margin-top: 14px;
-      letter-spacing: 0.13em;
-      text-align:center;
-      transition: opacity 0.22s;
+    #vox-mothership.listening .soundwave,
+    #vox-mothership.speaking .soundwave {
+      opacity: 1;
+    }
+    /* Button center content */
+    .mothership-logo {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 60% 40%, #3b82f6 70%, #1e40af 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Quicksand', system-ui, sans-serif;
+      font-weight: bold; font-size: 1.3rem;
+      color: white; letter-spacing: 1px; opacity: 0.95;
+      box-shadow: 0 2px 8px 0 rgba(37,99,235,0.08);
+      user-select: none; pointer-events: none; z-index: 4;
+    }
+    .mothership-logo .tm {
+      font-size: 0.6rem;
+      font-weight: 400;
+      vertical-align: super;
+      margin-left: 2px;
+      opacity: 0.8;
+    }
+    /* Click to talk hint */
+    .click-hint {
+      position: absolute;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.02rem;
+      color: #dbeafe;
+      background: rgba(36,66,180,0.21);
+      border-radius: 8px;
+      padding: 2px 13px;
+      letter-spacing: 0.09em;
+      font-family: 'Quicksand', system-ui, sans-serif;
+      opacity: 0.93;
+      pointer-events: none;
+      transition: opacity 0.18s;
+      z-index: 5;
       user-select: none;
-      font-family:'Quicksand',system-ui,sans-serif;
     }
-    #cloud-btn.listening ~ .cloud-hint,
-    #cloud-btn.speaking ~ .cloud-hint {
+    #vox-mothership.listening .click-hint,
+    #vox-mothership.speaking .click-hint,
+    #vox-mothership.thinking .click-hint,
+    #vox-mothership.paused .click-hint {
       opacity: 0;
     }
-    .powered-by {
-      position:fixed;
-      right: 20px; bottom: 16px;
-      font-size: 1.05rem;
+    /* Status text */
+    .mothership-status {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #1e40af;
+      background: rgba(255,255,255,0.96);
+      border-radius: 10px;
+      padding: 4px 18px;
+      box-shadow: 0 2px 8px rgba(37,99,235,.06);
+      min-width: 110px;
+      text-align: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    /* Powered by footer */
+    .powered-footer {
+      margin-top: 12px;
+      font-size: 0.95rem;
       color: #174ca1;
-      opacity: 0.48;
-      background: none;
-      text-align: right;
-      user-select: none;
-      z-index: 20;
-      letter-spacing: 0.5px;
-      font-weight:600;
-      font-family:'Quicksand',system-ui,sans-serif;
+      opacity: 0.8;
+      font-family:'Quicksand', system-ui, sans-serif;
+      text-align:center;
+      width:100%;
+      letter-spacing:0.04em;
     }
     @media (max-width: 600px) {
-      .vox-label { font-size:1rem; margin-bottom:7px;}
-      #cloud-btn { width: 95px; height: 95px;}
-      .cloud-logo { width: 38px; height: 38px; font-size: 0.6rem;}
-      .cloud-hint { font-size:0.67rem; margin-top:6px;}
-      .powered-by { font-size:0.7rem; right: 8px; bottom: 6px;}
+      #vox-mothership { width: 120px; height: 120px; }
+      .mothership-logo { width: 55px; height: 55px; font-size: 0.8rem;}
+      .soundwave { width: 80px; height: 40px; }
+      .click-hint { font-size:0.8rem; padding:2px 7px; bottom:14px;}
+      .mothership-status { font-size:0.93rem; min-width:80px; padding:3px 8px;}
+      .powered-footer { font-size:0.7rem; margin-top:7px;}
     }
   </style>
 </head>
 <body>
-  <div class="vox-label">VoxTalk<span class="tm">™</span></div>
-  <div class="cloud-container">
-    <button id="cloud-btn" class="idle" tabindex="0" aria-label="Click to talk with VoxTalk">
-      <div class="cloud-logo"></div>
+  <div class="mothership-container">
+    <button id="vox-mothership" tabindex="0" aria-label="Click to talk with VoxTalk">
+      <svg class="soundwave" viewBox="0 0 120 60">
+        <polyline id="wave1" points="0,30 10,25 20,35 30,20 40,40 50,32 60,30 70,28 80,40 90,20 100,35 110,25 120,30" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <polyline id="wave2" points="0,30 10,28 20,32 30,25 40,37 50,34 60,30 70,33 80,37 90,27 100,32 110,28 120,30" fill="none" stroke="#bde0fe" stroke-width="2"/>
+      </svg>
+      <div class="mothership-logo">
+        VoxTalk<span class="tm">™</span>
+      </div>
+      <div class="click-hint">Click to talk</div>
     </button>
-    <div class="cloud-hint" id="cloudHint">click to talk</div>
+    <div id="vox-mothership-status" class="mothership-status">Ready</div>
+    <div class="powered-footer">
+      Powered by VoxTalk. Your brand, your AI.
+    </div>
   </div>
-  <div class="powered-by">Powered by VoxTalk</div>
   <script>
-    const cloudBtn = document.getElementById('cloud-btn');
-    const cloudHint = document.getElementById('cloudHint');
-    let state = "idle";
-
+    const mothership = document.getElementById('vox-mothership');
+    const status = document.getElementById('vox-mothership-status');
+    let state = "idle"; // idle, listening, thinking, speaking
+    // Animate the soundwave (simple vertical movement)
+    function animateWave() {
+      let t = 0;
+      function frame() {
+        t += 0.06;
+        // Animate the 'wave1' polyline up and down
+        const amp = state === "speaking" ? 13 : 8;
+        const freq = state === "speaking" ? 2.8 : 1.2;
+        let points = [];
+        for(let i=0; i<=12; i++) {
+          let x = i*10;
+          let y = 30 + Math.sin(t*freq + i*0.5) * amp * Math.sin(t + i*0.3);
+          points.push(`${x},${y.toFixed(1)}`);
+        }
+        document.getElementById('wave1').setAttribute('points', points.join(' '));
+        if(state === "listening" || state === "speaking") requestAnimationFrame(frame);
+      }
+      if(state === "listening" || state === "speaking") frame();
+    }
     function setState(newState) {
-      cloudBtn.classList.remove('listening', 'speaking');
+      mothership.classList.remove('speaking', 'listening', 'thinking', 'paused');
       state = newState;
-      if (state === "idle") {
-        cloudHint.style.opacity = "0.75";
-      } else {
-        cloudHint.style.opacity = "0";
+      switch (newState) {
+        case "idle":
+          status.textContent = "Ready";
+          break;
+        case "listening":
+          mothership.classList.add('listening');
+          status.textContent = "Listening…";
+          animateWave();
+          break;
+        case "thinking":
+          mothership.classList.add('thinking');
+          status.textContent = "Thinking…";
+          break;
+        case "speaking":
+          mothership.classList.add('speaking');
+          status.textContent = "Speaking…";
+          animateWave();
+          break;
+        case "paused":
+          mothership.classList.add('paused');
+          status.textContent = "Paused";
+          break;
       }
     }
-
-    cloudBtn.onclick = () => {
-      if (state === "idle") {
+    mothership.onclick = () => {
+      if (state === "idle" || state === "thinking") {
         setState("listening");
-        setTimeout(() => {
-          setState("speaking");
-          setTimeout(() => setState("idle"), 4200);
-        }, 1200);
+        setTimeout(() => setState("speaking"), 1200); // simulate AI response after 1.2s
+        setTimeout(() => setState("idle"), 4200); // back to idle after 3s
       } else {
         setState("idle");
       }
     };
-
-    document.addEventListener('keydown', (e) => {
+    // Keyboard demo for investors
+    mothership.onkeydown = (e) => {
       if (e.key === "s") setState("speaking");
       if (e.key === "l") setState("listening");
+      if (e.key === "t") setState("thinking");
       if (e.key === "i") setState("idle");
-    });
+      if (e.key === "p") setState("paused");
+    };
   </script>
 </body>
 </html>
