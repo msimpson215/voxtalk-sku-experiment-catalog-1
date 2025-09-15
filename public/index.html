@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Mothership Demo</title>
+  <title>VoxTalk Mothership Full Monte Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
@@ -29,6 +29,9 @@
       transition: box-shadow 0.2s, background 0.2s;
       outline: none;
       border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     /* Swirling clouds overlay */
     #vox-mothership::before {
@@ -45,11 +48,22 @@
     #vox-mothership.speaking::before {
       animation: swirl-speaking 0.7s linear infinite;
     }
-    #vox-mothership:active {
-      box-shadow: 0 2px 16px 0 rgba(37,99,235,0.32);
+    #vox-mothership.listening::before {
+      animation: swirl-listening 1.2s linear infinite;
     }
-    /* Swirl keyframes */
+    #vox-mothership.thinking::before {
+      animation: swirl-thinking 2.8s linear infinite;
+      opacity: 0.3;
+    }
+    #vox-mothership.paused::before {
+      animation: none;
+      opacity: 0.2;
+    }
     @keyframes swirl-idle {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    @keyframes swirl-listening {
       0% { transform: rotate(0deg);}
       100% { transform: rotate(360deg);}
     }
@@ -57,7 +71,25 @@
       0% { transform: rotate(0deg);}
       100% { transform: rotate(360deg);}
     }
-    /* Center logo or branding */
+    @keyframes swirl-thinking {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    /* Sound wave animation (SVG overlay) */
+    .soundwave {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px; height: 60px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 2;
+    }
+    #vox-mothership.listening .soundwave,
+    #vox-mothership.speaking .soundwave {
+      opacity: 1;
+    }
     .mothership-logo {
       position: absolute;
       top: 50%; left: 50%;
@@ -71,6 +103,7 @@
       box-shadow: 0 2px 8px 0 rgba(37,99,235,0.08);
       user-select: none;
       pointer-events: none;
+      z-index: 3;
     }
     /* Status text */
     .mothership-status {
@@ -88,12 +121,20 @@
     @media (max-width: 600px) {
       #vox-mothership { width: 120px; height: 120px; }
       .mothership-logo { width: 55px; height: 55px; font-size: 1rem;}
+      .soundwave { width: 80px; height: 40px; }
     }
   </style>
 </head>
 <body>
   <div class="mothership-container">
     <button id="vox-mothership" tabindex="0" aria-label="Talk to VoxTalk AI">
+      <!-- Soundwave SVG, animates for listening/speaking -->
+      <svg class="soundwave" viewBox="0 0 120 60">
+        <polyline id="wave1" points="0,30 10,25 20,35 30,20 40,40 50,32 60,30 70,28 80,40 90,20 100,35 110,25 120,30"
+          fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <polyline id="wave2" points="0,30 10,28 20,32 30,25 40,37 50,34 60,30 70,33 80,37 90,27 100,32 110,28 120,30"
+          fill="none" stroke="#bde0fe" stroke-width="2"/>
+      </svg>
       <div class="mothership-logo">VoxTalk</div>
     </button>
     <div id="vox-mothership-status" class="mothership-status">Ready</div>
@@ -106,22 +147,50 @@
     const status = document.getElementById('vox-mothership-status');
     let state = "idle"; // idle, listening, thinking, speaking
 
+    // Animate the soundwave (simple vertical movement)
+    function animateWave() {
+      let t = 0;
+      function frame() {
+        t += 0.06;
+        // Animate the 'wave1' polyline up and down
+        const amp = state === "speaking" ? 13 : 8;
+        const freq = state === "speaking" ? 2.8 : 1.2;
+        let points = [];
+        for(let i=0; i<=12; i++) {
+          let x = i*10;
+          let y = 30 + Math.sin(t*freq + i*0.5) * amp * Math.sin(t + i*0.3);
+          points.push(`${x},${y.toFixed(1)}`);
+        }
+        document.getElementById('wave1').setAttribute('points', points.join(' '));
+        if(state === "listening" || state === "speaking") requestAnimationFrame(frame);
+      }
+      if(state === "listening" || state === "speaking") frame();
+    }
+
     function setState(newState) {
-      mothership.classList.remove('speaking');
+      mothership.classList.remove('speaking', 'listening', 'thinking', 'paused');
       state = newState;
       switch (newState) {
         case "idle":
           status.textContent = "Ready";
           break;
         case "listening":
+          mothership.classList.add('listening');
           status.textContent = "Listening…";
+          animateWave();
           break;
         case "thinking":
+          mothership.classList.add('thinking');
           status.textContent = "Thinking…";
           break;
         case "speaking":
           mothership.classList.add('speaking');
           status.textContent = "Speaking…";
+          animateWave();
+          break;
+        case "paused":
+          mothership.classList.add('paused');
+          status.textContent = "Paused";
           break;
       }
     }
@@ -129,8 +198,8 @@
     mothership.onclick = () => {
       if (state === "idle" || state === "thinking") {
         setState("listening");
-        setTimeout(() => setState("speaking"), 1000); // simulate AI response after 1s
-        setTimeout(() => setState("idle"), 4000); // back to idle after 3s
+        setTimeout(() => setState("speaking"), 1200); // simulate AI response after 1.2s
+        setTimeout(() => setState("idle"), 4200); // back to idle after 3s
       } else {
         setState("idle");
       }
@@ -142,6 +211,7 @@
       if (e.key === "l") setState("listening");
       if (e.key === "t") setState("thinking");
       if (e.key === "i") setState("idle");
+      if (e.key === "p") setState("paused");
     };
   </script>
 </body>
