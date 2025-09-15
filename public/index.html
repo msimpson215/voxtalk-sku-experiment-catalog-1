@@ -68,7 +68,7 @@
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
 
-    let llmActive = false; // New flag: should we accept LLM response?
+    let llmActive = false; // Only accept LLM response if true
 
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
@@ -101,8 +101,6 @@
         const dc = pc.createDataChannel("events");
         dc.onmessage = (e)=> {
           try {
-            // LLM response chunk arrives here.
-            // Only append if llmActive is true
             if (!llmActive) return;
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
@@ -134,12 +132,14 @@
           talking = !talking;
           micTrack.enabled = talking;
           setListening(talking);
-          llmActive = talking; // <== Enable/disable LLM output
+          llmActive = talking;
           if (talking) {
             appendLine("me","(Listening...)");
           } else {
             setListening(false); setSpeaking(false);
             appendLine("me","(Stopped)");
+            rtAudio.pause();           // STOP audio playback immediately
+            rtAudio.srcObject = null;  // Remove stream (in case audio continues)
           }
         };
 
