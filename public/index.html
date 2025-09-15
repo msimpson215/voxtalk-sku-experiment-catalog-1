@@ -4,24 +4,24 @@
   <meta charset="utf-8" />
   <title>VoxTalk Minimal Cloud Button Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Soft, friendly font -->
+  <!-- Softer, rounder font from Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin:0; font-family:'Quicksand','Nunito',system-ui,sans-serif;
       min-height:100vh; width:100vw;
-      background: radial-gradient(circle at 50% 20%, #e0e7ff 8%, #dbeafe 18%, #93c5fd 38%, #1e3a8a 97%);
+      background: radial-gradient(circle at 50% 20%, #1e3a8a 0%, #174ca1 10%, #2563eb 40%, #93c5fd 70%, #e0e7ff 100%);
       display:flex; flex-direction:column; align-items:center; justify-content:center;
     }
     .vox-label {
-      font-size:1.6rem; font-family:'Nunito', 'Quicksand', system-ui, sans-serif;
+      font-size:1.5rem; font-family:'Nunito', 'Quicksand', system-ui, sans-serif;
       font-weight:700; letter-spacing:0.04em;
-      color:#fff; margin-bottom:18px; margin-top:0px;
+      color:#fff; margin-bottom:14px; margin-top:0px;
       user-select: none;
       opacity:0.97; transition: opacity 0.25s;
       text-shadow:0 2px 16px #2563eb44;
       border-radius:12px;
-      background:rgba(255,255,255,0.06);
+      background:rgba(255,255,255,0.04);
       padding:6px 22px;
     }
     .cloud-container {
@@ -29,11 +29,11 @@
       min-height:340px;
     }
     #cloud-btn {
-      width: 225px;
-      height: 225px;
+      width: 220px;
+      height: 220px;
       border-radius: 50%;
-      background: radial-gradient(circle at 52% 62%, #174ca1 86%, #2563eb 100%);
-      box-shadow: 0 22px 88px 0 rgba(37,99,235,0.30);
+      background: radial-gradient(circle at 52% 62%, #174ca1 94%, #1e3a8a 100%);
+      box-shadow: 0 24px 110px 0 rgba(37,99,235,0.36);
       position: relative;
       cursor: pointer;
       outline: none;
@@ -44,4 +44,142 @@
       transition: box-shadow 0.22s, background 0.22s, transform 0.22s;
       overflow: hidden;
     }
-    /* Soft swirling cloud effect (not a rigid spin,
+    /* Soft swirling cloud effect (not a rigid spin, organic) */
+    #cloud-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      opacity: 0.68;
+      background: conic-gradient(
+        from 0deg,
+        #fff 6%,
+        #bde0fe 18%,
+        #93c5fd 30%,
+        #dbeafe 38%,
+        #f7fafc 55%,
+        #bde0fe 73%,
+        #60a5fa 89%,
+        #f7fafc 100%
+      );
+      animation: swirl-clouds 5.2s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
+      pointer-events: none;
+      filter: blur(15px);
+      z-index: 1;
+      transition: animation 0.22s;
+    }
+    #cloud-btn.listening::before {
+      animation: swirl-clouds-listen 2.1s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
+    }
+    #cloud-btn.speaking::before {
+      animation: swirl-clouds-speak 1.0s cubic-bezier(0.4,0.2,0.6,0.8) infinite;
+    }
+    @keyframes swirl-clouds {
+      0% { transform: rotate(-2deg);}
+      28% { transform: rotate(7deg);}
+      64% { transform: rotate(-4deg);}
+      100% { transform: rotate(-2deg);}
+    }
+    @keyframes swirl-clouds-listen {
+      0% { transform: rotate(0deg);}
+      40% { transform: rotate(12deg);}
+      80% { transform: rotate(-8deg);}
+      100% { transform: rotate(0deg);}
+    }
+    @keyframes swirl-clouds-speak {
+      0% { transform: rotate(-2deg);}
+      30% { transform: rotate(19deg);}
+      100% { transform: rotate(-2deg);}
+    }
+    .cloud-logo {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 52% 50%, #174ca1 99%, #2563eb 100%);
+      display: flex; align-items:center; justify-content:center;
+      font-weight: 600; font-size: 1.11rem;
+      color: #e0e7ff; opacity: 0.98;
+      box-shadow: 0 2px 8px 0 #60a5fa33;
+      user-select: none;
+      pointer-events: none;
+      z-index: 3;
+      letter-spacing: 0.7px;
+      mix-blend-mode: lighten;
+      font-family:'Quicksand','Nunito',system-ui,sans-serif;
+    }
+    /* Tiny hint, only visible when idle */
+    .cloud-hint {
+      font-size: 0.8rem;
+      color: #e0e7ff;
+      opacity: 0.7;
+      margin-top: 13px;
+      letter-spacing: 0.16em;
+      text-align:center;
+      transition: opacity 0.22s;
+      user-select: none;
+      font-family:'Quicksand','Nunito',system-ui,sans-serif;
+    }
+    #cloud-btn.listening .cloud-hint,
+    #cloud-btn.speaking .cloud-hint {
+      opacity: 0;
+    }
+    .powered-by {
+      position:fixed;
+      right: 20px; bottom: 12px;
+      font-size: 0.93rem;
+      color: #fff;
+      opacity: 0.25;
+      background: none;
+      text-align: right;
+      user-select: none;
+      z-index: 20;
+      letter-spacing: 0.5px;
+      font-weight:400;
+      font-family:'Quicksand','Nunito',system-ui,sans-serif;
+    }
+    @media (max-width: 600px) {
+      .vox-label { font-size:0.92rem; margin-bottom:7px;}
+      #cloud-btn { width: 95px; height: 95px;}
+      .cloud-logo { width: 38px; height: 38px; font-size: 0.6rem;}
+      .cloud-hint { font-size:0.59rem; margin-top:6px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="vox-label">VoxTalk</div>
+  <div class="cloud-container">
+    <button id="cloud-btn" class="idle" tabindex="0" aria-label="Start talking with VoxTalk">
+      <div class="cloud-logo"></div>
+    </button>
+    <div class="cloud-hint" id="cloudHint">start</div>
+  </div>
+  <div class="powered-by">Powered by VoxTalk</div>
+  <script>
+    const cloudBtn = document.getElementById('cloud-btn');
+    const cloudHint = document.getElementById('cloudHint');
+    let state = "idle";
+
+    function setState(newState) {
+      cloudBtn.classList.remove('listening', 'speaking');
+      state = newState;
+    }
+
+    cloudBtn.onclick = () => {
+      if (state === "idle") {
+        setState("listening");
+        setTimeout(() => {
+          setState("speaking");
+          setTimeout(() => setState("idle"), 4200);
+        }, 1200);
+      } else {
+        setState("idle");
+      }
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === "s") setState("speaking");
+      if (e.key === "l") setState("listening");
+      if (e.key === "i") setState("idle");
+    });
+  </script>
+</body>
+</html>
