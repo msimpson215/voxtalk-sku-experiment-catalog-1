@@ -15,12 +15,10 @@
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-/* Idle = calm pulse */
 .voice-button.idle {
   animation: idleBreath 3s infinite ease-in-out;
 }
 
-/* Talking = quicker pulse */
 .voice-button.talking {
   animation: talkingBreath 1.2s infinite ease-in-out;
   background: radial-gradient(circle at center, #10a37f 0%, #13c296 100%);
