@@ -4,35 +4,33 @@
   <meta charset="utf-8" />
   <title>VoxTalk Minimal Cloud Button Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Softer, rounder font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
-      margin:0; font-family:system-ui,sans-serif;
-      min-height:100vh; background: radial-gradient(circle at 55% 18%, #1e3a8a 10%, #0a174e 98%);
+      margin:0; font-family:'Quicksand', system-ui, sans-serif;
+      min-height:100vh; width:100vw;
+      background: radial-gradient(circle at 50% 20%, #dbeafe 10%, #93c5fd 40%, #1e3a8a 98%);
       display:flex; flex-direction:column; align-items:center; justify-content:center;
     }
-    .vox-branding {
-      font-size:1.3rem; font-weight:700; letter-spacing:0.7px;
-      color:#fff; margin-bottom:32px; margin-top:18px;
-      user-select: none; opacity:0.93;
-      text-shadow:0 2px 12px #2563eb77;
-      position:relative;
-      display:inline-block;
-    }
-    .vox-branding .tm {
-      font-size:0.6rem; font-weight:400;
-      vertical-align:super; margin-left:2px;
-      opacity:0.7;
+    .vox-label {
+      font-size:1.3rem; font-weight:700; letter-spacing:0.06em;
+      color:#fff; margin-bottom:16px; margin-top:0px;
+      user-select: none;
+      opacity:0.95; transition: opacity 0.25s;
+      text-shadow:0 2px 12px #2563eb55;
+      font-family:'Quicksand', system-ui, sans-serif;
     }
     .cloud-container {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       min-height:340px;
     }
     #cloud-btn {
-      width: 220px;
-      height: 220px;
+      width: 210px;
+      height: 210px;
       border-radius: 50%;
       background: radial-gradient(circle at 50% 60%, #174ca1 84%, #2563eb 100%);
-      box-shadow: 0 20px 90px 0 rgba(37,99,235,0.33);
+      box-shadow: 0 18px 70px 0 rgba(37,99,235,0.29);
       position: relative;
       cursor: pointer;
       outline: none;
@@ -43,34 +41,32 @@
       transition: box-shadow 0.22s, background 0.22s, transform 0.22s;
       overflow: hidden;
     }
-    /* Gentle swirling clouds effect (not full spin) */
+    /* Gentle cloud effect (not full spin) */
     #cloud-btn::before {
       content: "";
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      opacity: 0.66;
+      opacity: 0.63;
       background: conic-gradient(
         from 0deg,
         #f7fafc 6%,
-        #bde0fe 16%,
-        #60a5fa 29%,
+        #bde0fe 18%,
+        #93c5fd 29%,
         #e0e7ff 40%,
-        #e0e7ff 50%,
-        #f7fafc 65%,
-        #bde0fe 82%,
-        #a7f3d0 89%, /* gentle green accent */
-        #c4b5fd 95%, /* gentle purple accent */
+        #f7fafc 55%,
+        #bde0fe 72%,
+        #60a5fa 89%,
         #f7fafc 100%
       );
-      animation: swirl-clouds 4.4s ease-in-out infinite;
+      animation: swirl-clouds 4.2s ease-in-out infinite;
       pointer-events: none;
-      filter: blur(13px);
+      filter: blur(12px);
       z-index: 1;
       transition: animation 0.22s;
     }
     #cloud-btn.listening::before {
-      animation: swirl-clouds-listen 2.3s ease-in-out infinite;
+      animation: swirl-clouds-listen 2.1s ease-in-out infinite;
     }
     #cloud-btn.speaking::before {
       animation: swirl-clouds-speak 1.1s ease-in-out infinite;
@@ -90,41 +86,46 @@
     }
     @keyframes swirl-clouds-speak {
       0% { transform: rotate(-2deg);}
-      50% { transform: rotate(16deg);}
+      50% { transform: rotate(12deg);}
       100% { transform: rotate(-2deg);}
     }
     .cloud-logo {
-      width: 110px; height: 110px;
+      width: 120px; height: 120px;
       border-radius: 50%;
-      background: radial-gradient(circle at 52% 50%, #174ca1 95%, #2563eb 100%);
+      background: radial-gradient(circle at 52% 50%, #174ca1 96%, #2563eb 100%);
       display: flex; flex-direction:column; align-items: center; justify-content: center;
-      font-weight: 600; font-size: 1.13rem;
+      font-weight: 700; font-size: 1.09rem;
       color: #e0e7ff; opacity: 0.98;
       box-shadow: 0 2px 8px 0 #60a5fa33;
       user-select: none;
       pointer-events: none;
       z-index: 3;
-      letter-spacing: 0.9px;
+      letter-spacing: 0.7px;
       mix-blend-mode: lighten;
+      font-family:'Quicksand', system-ui, sans-serif;
     }
     .cloud-logo .cloud-title {
-      font-size: 1.08rem; font-weight: 500; color: #e0e7ff; letter-spacing: 0.8px;
-      margin-bottom: 7px;
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: #e0e7ff;
+      letter-spacing: 0.06em;
       opacity:0.98;
-      text-shadow:0 1px 7px #2563eb55;
+      text-shadow:0 1px 7px #2563eb45;
       transition: opacity 0.22s;
+      font-family:'Quicksand', system-ui, sans-serif;
     }
     .cloud-logo .cloud-hint {
-      font-size: 0.95rem;
+      font-size: 0.75rem;
       color: #e0e7ff;
-      opacity: 0.7;
-      margin-top: 3px;
-      letter-spacing: 0.3px;
+      opacity: 0.63;
+      margin-top: 9px;
+      letter-spacing: 0.2px;
       text-align:center;
-      transition: opacity 0.25s;
+      transition: opacity 0.22s;
       user-select: none;
+      font-family:'Quicksand', system-ui, sans-serif;
     }
-    /* Hide hint when not idle */
+    /* Hide hint/title when not idle */
     #cloud-btn.listening .cloud-hint,
     #cloud-btn.speaking .cloud-hint {
       opacity: 0;
@@ -138,25 +139,26 @@
       right: 20px; bottom: 12px;
       font-size: 0.91rem;
       color: #fff;
-      opacity: 0.32;
+      opacity: 0.29;
       background: none;
       text-align: right;
       user-select: none;
       z-index: 20;
       letter-spacing: 0.5px;
-      font-weight:300;
+      font-weight:400;
+      font-family:'Quicksand', system-ui, sans-serif;
     }
     @media (max-width: 600px) {
-      .vox-branding { font-size:0.93rem; margin-bottom:14px;}
-      #cloud-btn { width: 120px; height: 120px;}
-      .cloud-logo { width: 56px; height: 56px; font-size: 0.7rem;}
-      .cloud-logo .cloud-title { font-size:0.82rem;}
-      .cloud-logo .cloud-hint { font-size:0.78rem;}
+      .vox-label { font-size:0.93rem; margin-bottom:10px;}
+      #cloud-btn { width: 100px; height: 100px;}
+      .cloud-logo { width: 48px; height: 48px; font-size: 0.7rem;}
+      .cloud-logo .cloud-title { font-size:0.79rem;}
+      .cloud-logo .cloud-hint { font-size:0.65rem;}
     }
   </style>
 </head>
 <body>
-  <div class="vox-branding">VoxTalk<span class="tm">™</span></div>
+  <div class="vox-label">VoxTalk</div>
   <div class="cloud-container">
     <button id="cloud-btn" class="idle" tabindex="0" aria-label="Talk to VoxTalk AI">
       <div class="cloud-logo">
@@ -180,7 +182,6 @@
         setState("listening");
         setTimeout(() => {
           setState("speaking");
-          // Simulate greeting (replace with real AI backend)
           setTimeout(() => setState("idle"), 4200);
         }, 1200);
       } else {
@@ -188,7 +189,6 @@
       }
     };
 
-    // Keyboard demo for investors: global event
     document.addEventListener('keydown', (e) => {
       if (e.key === "s") setState("speaking");
       if (e.key === "l") setState("listening");
