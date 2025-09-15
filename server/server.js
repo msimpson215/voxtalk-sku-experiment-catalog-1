@@ -1,11 +1,8 @@
 import express from "express";
 
 const app = express();
-
-// Serve public folder (HTML, CSS, etc.)
 app.use(express.static("public"));
 
-// Session endpoint for OpenAI Realtime
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -16,7 +13,9 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "alloy"
+        voice: "alloy",
+        instructions:
+          "You are an AI voice assistant. ALWAYS respond in English. Never default to Spanish. If the user speaks another language, translate it and reply only in English."
       })
     });
 
@@ -24,13 +23,14 @@ app.post("/session", async (req, res) => {
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy"
+      voice: "alloy",
+      deepgramKey: process.env.DEEPGRAM_API_KEY // keep this for now
     });
   } catch (e) {
-    console.error("Session creation failed:", e);
+    console.error("Session error:", e);
     res.status(500).json({ error: "session failed" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("✅ Server running on " + PORT));
+app.listen(PORT, () => console.log("Server running on " + PORT));
