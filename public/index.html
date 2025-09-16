@@ -21,8 +21,13 @@
       border-radius:8px;
       padding:16px;
       box-shadow:0 4px 12px rgba(37,99,235,.10);
+      position:relative;
     }
-    h1 { margin:20px 0; font-size:32px; }
+    .button-row {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -33,9 +38,11 @@
       Hello Mia and Rachel, nice to meet you!<br><br>
       You can ask me anything you would like.
     </div>
-    <button class="voice-button idle" id="voiceButton">
-      🎤
-    </button>
+    <div class="button-row">
+      <button class="voice-button idle" id="voiceButton">
+        🎤
+      </button>
+    </div>
   </div>
 </body>
 </html>
