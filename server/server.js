@@ -13,7 +13,7 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "alloy",
+        voice: "nova", // <-- change here!
         instructions:
           "Hello I'm Voxtalk. I was created by your dad, Marty Simpson, and he wanted me to say hello Mia and Rachel, nice to meet you... ask VoxTalk anything you want. ALWAYS respond in English. Never default to Spanish. If the user speaks another language, translate it and reply only in English."
       })
@@ -23,8 +23,8 @@ app.post("/session", async (req, res) => {
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy",
-      deepgramKey: process.env.DEEPGRAM_API_KEY // keep this for now
+      voice: "nova", // <-- change here too!
+      deepgramKey: process.env.DEEPGRAM_API_KEY
     });
   } catch (e) {
     console.error("Session error:", e);
