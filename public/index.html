@@ -2,250 +2,179 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Mothership Full Monte Demo</title>
+  <title>VoxTalk</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Professional soft font -->
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:,">
   <style>
     body {
-      margin:0; font-family:'Quicksand',system-ui,sans-serif;
-      min-height:100vh; width:100vw;
-      background: radial-gradient(circle at 50% 20%, #dbeafe 10%, #93c5fd 40%, #1e3a8a 90%);
-      display:flex; align-items:center; justify-content:center;
+      margin:0; font-family:system-ui,sans-serif;
+      display:grid; place-items:center; min-height:100vh;
+      background: radial-gradient(circle at 50% 20%, #dbeafe, #93c5fd 40%, #1e3a8a 90%);
     }
-    .mothership-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    #vox-mothership {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 60% 60%, #2563eb 65%, #1e40af 100%);
-      box-shadow: 0 6px 32px 0 rgba(37,99,235,0.23);
+    .app { text-align:center; max-width:600px; }
+    .demo-label { font-size:12px; color:#111; margin-bottom:4px; }
+    h1 { margin:6px 0; font-size:22px; }
+
+    #pttBtn {
+      width:120px; height:120px;
+      border-radius:50%; border:none; cursor:pointer;
+      background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
+      box-shadow:0 6px 18px rgba(37,99,235,.3);
+      transition: transform 0.15s ease, box-shadow 0.3s ease;
       position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      transition: box-shadow 0.2s, background 0.2s;
-      outline: none;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
-    /* Swirling clouds overlay */
-    #vox-mothership::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      opacity: 0.8;
-      background: conic-gradient(from 0deg, #fff 10%, #bde0fe 30%, #60a5fa 60%, #fff 100%);
-      animation: swirl-idle 2.2s linear infinite;
-      pointer-events: none;
-      filter: blur(2.5px);
-      z-index: 1;
+    #pttBtn:hover { transform: scale(1.02); }
+    #pttBtn:active { transform: scale(0.95); }
+
+    #pttBtn.listening { animation: listenPulse 1.6s ease-in-out infinite; }
+    @keyframes listenPulse {
+      0% { box-shadow:0 0 0 0 rgba(59,130,246,.7); }
+      50% { box-shadow:0 0 0 20px rgba(59,130,246,0); }
+      100% { box-shadow:0 0 0 0 rgba(59,130,246,0); }
     }
-    #vox-mothership.speaking::before { animation: swirl-speaking 0.7s linear infinite; }
-    #vox-mothership.listening::before { animation: swirl-listening 1.2s linear infinite; }
-    #vox-mothership.thinking::before { animation: swirl-thinking 2.8s linear infinite; opacity: 0.3; }
-    #vox-mothership.paused::before { animation: none; opacity: 0.2; }
-    @keyframes swirl-idle {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+
+    #pttBtn.speaking::before {
+      content:""; position:absolute; inset:0;
+      border-radius:50%;
+      background: conic-gradient(from 0deg, #60a5fa, #2563eb, #1e40af, #60a5fa);
+      animation: swirl 2s linear infinite;
+      -webkit-mask: radial-gradient(circle, rgba(0,0,0,0) 65%, rgba(0,0,0,1) 66%);
+              mask: radial-gradient(circle, rgba(0,0,0,0) 65%, rgba(0,0,0,1) 66%);
     }
-    @keyframes swirl-listening {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+    @keyframes swirl {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
     }
-    @keyframes swirl-speaking {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+
+    #answer {
+      margin-top:20px; padding:12px; border:1px solid #ccc;
+      border-radius:8px; background:white;
+      min-height:80px; text-align:left; font-size:14px;
     }
-    @keyframes swirl-thinking {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
-    }
-    /* Sound wave animation (SVG overlay) */
-    .soundwave {
-      position: absolute;
-      top: 54%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 120px; height: 60px;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 3;
-    }
-    #vox-mothership.listening .soundwave,
-    #vox-mothership.speaking .soundwave {
-      opacity: 1;
-    }
-    /* Button center content */
-    .mothership-logo {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 60% 40%, #3b82f6 70%, #1e40af 100%);
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Quicksand', system-ui, sans-serif;
-      font-weight: bold; font-size: 1.3rem;
-      color: white; letter-spacing: 1px; opacity: 0.95;
-      box-shadow: 0 2px 8px 0 rgba(37,99,235,0.08);
-      user-select: none; pointer-events: none; z-index: 4;
-    }
-    .mothership-logo .tm {
-      font-size: 0.6rem;
-      font-weight: 400;
-      vertical-align: super;
-      margin-left: 2px;
-      opacity: 0.8;
-    }
-    /* Click to talk hint */
-    .click-hint {
-      position: absolute;
-      bottom: 24px; left: 50%;
-      transform: translateX(-50%);
-      font-size: 1.02rem;
-      color: #dbeafe;
-      background: rgba(36,66,180,0.21);
-      border-radius: 8px;
-      padding: 2px 13px;
-      letter-spacing: 0.09em;
-      font-family: 'Quicksand', system-ui, sans-serif;
-      opacity: 0.93;
-      pointer-events: none;
-      transition: opacity 0.18s;
-      z-index: 5;
-      user-select: none;
-    }
-    #vox-mothership.listening .click-hint,
-    #vox-mothership.speaking .click-hint,
-    #vox-mothership.thinking .click-hint,
-    #vox-mothership.paused .click-hint {
-      opacity: 0;
-    }
-    /* Status text */
-    .mothership-status {
-      margin-top: 20px;
-      font-size: 1.2rem;
-      color: #1e40af;
-      background: rgba(255,255,255,0.96);
-      border-radius: 10px;
-      padding: 4px 18px;
-      box-shadow: 0 2px 8px rgba(37,99,235,.06);
-      min-width: 110px;
-      text-align: center;
-      transition: background 0.2s, color 0.2s;
-    }
-    /* Powered by footer */
-    .powered-footer {
-      margin-top: 12px;
-      font-size: 0.95rem;
-      color: #174ca1;
-      opacity: 0.8;
-      font-family:'Quicksand', system-ui, sans-serif;
-      text-align:center;
-      width:100%;
-      letter-spacing:0.04em;
-    }
-    @media (max-width: 600px) {
-      #vox-mothership { width: 120px; height: 120px; }
-      .mothership-logo { width: 55px; height: 55px; font-size: 0.8rem;}
-      .soundwave { width: 80px; height: 40px; }
-      .click-hint { font-size:0.8rem; padding:2px 7px; bottom:14px;}
-      .mothership-status { font-size:0.93rem; min-width:80px; padding:3px 8px;}
-      .powered-footer { font-size:0.7rem; margin-top:7px;}
-    }
+    .line { margin:6px 0; }
+    .me { color:#2563eb; font-weight:600; }
+    .ai { color:#065f46; font-weight:600; }
+    .text { color:#111; }
+    .muted { color:#777; font-style:italic; }
+    .intro { color: #e11d48; font-weight: bold; }
   </style>
 </head>
 <body>
-  <div class="mothership-container">
-    <button id="vox-mothership" tabindex="0" aria-label="Click to talk with VoxTalk">
-      <svg class="soundwave" viewBox="0 0 120 60">
-        <polyline id="wave1" points="0,30 10,25 20,35 30,20 40,40 50,32 60,30 70,28 80,40 90,20 100,35 110,25 120,30" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-        <polyline id="wave2" points="0,30 10,28 20,32 30,25 40,37 50,34 60,30 70,33 80,37 90,27 100,32 110,28 120,30" fill="none" stroke="#bde0fe" stroke-width="2"/>
-      </svg>
-      <div class="mothership-logo">
-        VoxTalk<span class="tm">™</span>
-      </div>
-      <div class="click-hint">Click to talk</div>
-    </button>
-    <div id="vox-mothership-status" class="mothership-status">Ready</div>
-    <div class="powered-footer">
-      Powered by VoxTalk. Your brand, your AI.
-    </div>
+  <div class="app">
+    <p class="demo-label">Demo</p>
+    <h1>Talk to VoxTalk</h1>
+    <button id="pttBtn" aria-pressed="false" disabled></button>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <audio id="remote" autoplay playsinline></audio>
   </div>
+
   <script>
-    const mothership = document.getElementById('vox-mothership');
-    const status = document.getElementById('vox-mothership-status');
-    let state = "idle"; // idle, listening, thinking, speaking
-    // Animate the soundwave (simple vertical movement)
-    function animateWave() {
-      let t = 0;
-      function frame() {
-        t += 0.06;
-        // Animate the 'wave1' polyline up and down
-        const amp = state === "speaking" ? 13 : 8;
-        const freq = state === "speaking" ? 2.8 : 1.2;
-        let points = [];
-        for(let i=0; i<=12; i++) {
-          let x = i*10;
-          let y = 30 + Math.sin(t*freq + i*0.5) * amp * Math.sin(t + i*0.3);
-          points.push(`${x},${y.toFixed(1)}`);
-        }
-        document.getElementById('wave1').setAttribute('points', points.join(' '));
-        if(state === "listening" || state === "speaking") requestAnimationFrame(frame);
-      }
-      if(state === "listening" || state === "speaking") frame();
-    }
-    function setState(newState) {
-      mothership.classList.remove('speaking', 'listening', 'thinking', 'paused');
-      state = newState;
-      switch (newState) {
-        case "idle":
-          status.textContent = "Ready";
-          break;
-        case "listening":
-          mothership.classList.add('listening');
-          status.textContent = "Listening…";
-          animateWave();
-          break;
-        case "thinking":
-          mothership.classList.add('thinking');
-          status.textContent = "Thinking…";
-          break;
-        case "speaking":
-          mothership.classList.add('speaking');
-          status.textContent = "Speaking…";
-          animateWave();
-          break;
-        case "paused":
-          mothership.classList.add('paused');
-          status.textContent = "Paused";
-          break;
-      }
-    }
-    mothership.onclick = () => {
-      if (state === "idle" || state === "thinking") {
-        setState("listening");
-        setTimeout(() => setState("speaking"), 1200); // simulate AI response after 1.2s
-        setTimeout(() => setState("idle"), 4200); // back to idle after 3s
+    const pttBtn   = document.getElementById('pttBtn');
+    const answerEl = document.getElementById('answer');
+    const rtAudio  = document.getElementById('remote');
+
+    // --- INTRO SEQUENCE ---
+    const introMsg = "Hello I'm Voxtalk. I was created by your dad, Marty Simpson, and he wanted me to say hello Mia and Rachel, nice to meet you... ask VoxTalk anything you want.";
+    function playIntroMsg(msg, cb) {
+      answerEl.innerHTML = `<div class="line"><span class="ai intro">AI:</span> <span class="text">${msg}</span></div>`;
+      // Use browser TTS for intro
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(msg);
+        utter.lang = "en-US";
+        utter.rate = 1;
+        utter.onend = () => cb && cb();
+        window.speechSynthesis.speak(utter);
       } else {
-        setState("idle");
+        // fallback: just continue after 5s
+        setTimeout(cb, 5000);
       }
-    };
-    // Keyboard demo for investors
-    mothership.onkeydown = (e) => {
-      if (e.key === "s") setState("speaking");
-      if (e.key === "l") setState("listening");
-      if (e.key === "t") setState("thinking");
-      if (e.key === "i") setState("idle");
-      if (e.key === "p") setState("paused");
-    };
+    }
+
+    function appendLine(role, text) {
+      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
+                       <span class="text">${text}</span>`;
+      answerEl.appendChild(div);
+      answerEl.scrollTop = answerEl.scrollHeight;
+    }
+    function setListening(on) { pttBtn.classList.toggle('listening', on); }
+    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
+
+    async function initRealtime() {
+      try {
+        const s = await fetch("/session", { method:"POST" });
+        const { client_secret, model, voice } = await s.json();
+
+        const pc = new RTCPeerConnection();
+        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const micTrack = mic.getTracks()[0];
+        micTrack.enabled = false;
+        pc.addTrack(micTrack, mic);
+
+        pc.ontrack = (ev)=> {
+          rtAudio.srcObject = ev.streams[0];
+          rtAudio.play().catch(()=>{});
+        };
+
+        const dc = pc.createDataChannel("events");
+        dc.onmessage = (e)=> {
+          try {
+            const evt = JSON.parse(e.data);
+            if (evt.type === "response.message.delta") {
+              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              if (chunk) appendLine("ai", chunk);
+            }
+          } catch {}
+        };
+
+        const offer = await pc.createOffer({ offerToReceiveAudio:true });
+        await pc.setLocalDescription(offer);
+
+        const r = await fetch(
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
+          {
+            method:"POST",
+            headers: {
+              "Authorization":`Bearer ${client_secret.value}`,
+              "Content-Type":"application/sdp"
+            },
+            body: offer.sdp
+          }
+        );
+        const answer = { type:"answer", sdp: await r.text() };
+        await pc.setRemoteDescription(answer);
+
+        let talking = false;
+        pttBtn.onclick = () => {
+          talking = !talking;
+          micTrack.enabled = talking;
+          setListening(talking);
+          if (talking) {
+            appendLine("me","(Listening...)");
+          } else {
+            setListening(false); setSpeaking(false);
+            appendLine("me","(Stopped)");
+          }
+        };
+
+        rtAudio.addEventListener("playing", ()=> setSpeaking(true));
+        rtAudio.addEventListener("ended",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+        rtAudio.addEventListener("pause",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+
+      } catch(err) {
+        console.error("Realtime init failed", err);
+      }
+    }
+
+    // --- On Load: Play intro, then enable button and init ---
+    window.addEventListener("DOMContentLoaded", ()=>{
+      playIntroMsg(introMsg, ()=>{
+        pttBtn.disabled = false;
+        initRealtime();
+      });
+    });
   </script>
 </body>
 </html>
