@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -56,7 +57,6 @@
     .ai { color:#065f46; font-weight:600; }
     .text { color:#111; }
     .muted { color:#777; font-style:italic; }
-    .intro { color: #e11d48; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -73,40 +73,19 @@
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
 
-    const introMsg = "Hello I'm Voxtalk. I was created by your dad, Marty Simpson, and he wanted me to say hello Mia and Rachel, nice to meet you... ask VoxTalk anything you want.";
-
-    let introPlayed = false;
-    let realtimeStarted = false;
-
-    function appendLine(role, text, extraClass="") {
+    function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
       const div = document.createElement('div');
       div.className = 'line';
-      div.innerHTML = `<span class="${role} ${extraClass}">${role==='me'?'You:':'AI:'}</span>
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
                        <span class="text">${text}</span>`;
       answerEl.appendChild(div);
       answerEl.scrollTop = answerEl.scrollHeight;
     }
-
     function setListening(on) { pttBtn.classList.toggle('listening', on); }
     function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
 
-    function playIntroMsg(msg, cb) {
-      appendLine("ai", msg, "intro");
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(msg);
-        utter.lang = "en-US";
-        utter.rate = 1;
-        utter.onend = () => cb && cb();
-        window.speechSynthesis.speak(utter);
-      } else {
-        setTimeout(cb, 5000);
-      }
-    }
-
     async function initRealtime() {
-      if (realtimeStarted) return; // avoid double init
-      realtimeStarted = true;
       try {
         const s = await fetch("/session", { method:"POST" });
         const { client_secret, model, voice } = await s.json();
@@ -171,18 +150,7 @@
         console.error("Realtime init failed", err);
       }
     }
-
-    // Button works immediately, intro plays only on first click
-    pttBtn.onclick = function() {
-      if (!introPlayed) {
-        introPlayed = true;
-        playIntroMsg(introMsg, ()=>{
-          initRealtime();
-        });
-      } else {
-        // Normal click, handled inside initRealtime
-      }
-    }
+    initRealtime();
   </script>
 </body>
 </html>
