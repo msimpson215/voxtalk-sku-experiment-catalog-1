@@ -45,6 +45,28 @@
       letter-spacing: 0.5px;
       vertical-align: super;
     }
+    #statusBanner {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 10px auto;
+      padding: 8px 0;
+      font-size: 17px;
+      font-weight: 700;
+      border-radius: 7px;
+      background: #dbeafe;
+      color: #2563eb;
+      box-shadow: 0 2px 8px #60a5fa33;
+      opacity: 0.87;
+      transition: background 0.2s, color 0.2s;
+    }
+    #statusBanner.ai {
+      background: #15378a;
+      color: #fff;
+    }
+    #statusBanner.user {
+      background: #60a5fa;
+      color: #fff;
+    }
     #pttBtn {
       width: 170px;
       height: 170px;
@@ -62,15 +84,14 @@
       position: relative;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
-      background: #60a5fa; /* Light blue default */
+      background: #60a5fa;
       transition: background 0.2s;
     }
-    #pttBtn.speaking-ai {
+    #pttBtn.ai {
       background: #15378a !important;
     }
-    #pttBtn.speaking-user {
+    #pttBtn.user {
       background: #60a5fa !important;
-      box-shadow: 0 0 10px 2px #60a5fa99;
     }
     #pttBtnLabel {
       font-size: 17px;
@@ -144,6 +165,7 @@
       .app { max-width: 98vw; }
       .header-voxtalk { font-size: 25px; }
       .header-voxtalk .tm { font-size: 13px; top: -6px; right: -10px;}
+      #statusBanner { font-size: 13px; padding: 4px 0;}
       #pttBtn { width: 90px; height: 90px; font-size: 12px; }
       #answer { font-size: 13px; min-height: 30px; max-height: 120px;}
       #poweredBy { font-size: 9px; padding: 2px 8px;}
@@ -158,7 +180,8 @@
       VoxTalk
       <span class="tm">™</span>
     </div>
-    <button id="pttBtn" aria-pressed="false">
+    <div id="statusBanner">Ready</div>
+    <button id="pttBtn" class="user" aria-pressed="false">
       <span id="pttBtnLabel">Start Talking</span>
     </button>
     <div id="answer"><div class="muted">No conversation yet.</div></div>
@@ -168,14 +191,15 @@
     Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
   </div>
   <script>
-    const pttBtn = document.getElementById('pttBtn');
-    const pttBtnLabel = document.getElementById('pttBtnLabel');
-    const answerEl = document.getElementById('answer');
-    const rtAudio = document.getElementById('remote');
+    const pttBtn     = document.getElementById('pttBtn');
+    const pttBtnLabel= document.getElementById('pttBtnLabel');
+    const answerEl   = document.getElementById('answer');
+    const rtAudio    = document.getElementById('remote');
+    const statusBanner = document.getElementById('statusBanner');
 
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
-    let userFlashTimeout;
+    let userBannerTimeout;
 
     function renderTranscript() {
       if (!transcript.length) {
@@ -197,32 +221,32 @@
       transcript.push({role, text});
       renderTranscript();
       if(role === "me") {
-        flashUserTalking();
+        showUserBanner();
       }
     }
 
     function setIdle() {
-      pttBtn.classList.remove('speaking-ai', 'speaking-user');
+      pttBtn.classList.remove('ai','user');
+      pttBtn.classList.add('user');
       pttBtnLabel.textContent = "Start Talking";
       pttBtn.style.background = "#60a5fa";
-      clearTimeout(userFlashTimeout);
+      statusBanner.textContent = "Ready";
+      statusBanner.className = "";
+      clearTimeout(userBannerTimeout);
     }
-    function flashUserTalking() {
-      pttBtn.classList.remove('speaking-ai');
-      pttBtn.classList.add('speaking-user');
-      pttBtnLabel.textContent = "You spoke";
-      pttBtn.style.background = "#60a5fa";
-      clearTimeout(userFlashTimeout);
-      userFlashTimeout = setTimeout(() => {
-        setIdle();
+    function showUserBanner() {
+      statusBanner.textContent = "You just spoke";
+      statusBanner.className = "user";
+      clearTimeout(userBannerTimeout);
+      userBannerTimeout = setTimeout(() => {
+        statusBanner.textContent = "Ready";
+        statusBanner.className = "";
       }, 2000);
     }
-    function setAITalking() {
-      pttBtn.classList.remove('speaking-user');
-      pttBtn.classList.add('speaking-ai');
-      pttBtnLabel.textContent = "AI Speaking";
-      pttBtn.style.background = "#15378a";
-      clearTimeout(userFlashTimeout);
+    function showAIBanner() {
+      statusBanner.textContent = "AI is talking";
+      statusBanner.className = "ai";
+      clearTimeout(userBannerTimeout);
     }
     function closeSession() {
       sessionActive = false;
@@ -254,7 +278,11 @@
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
-              setAITalking();
+              showAIBanner();
+              pttBtn.classList.remove('user');
+              pttBtn.classList.add('ai');
+              pttBtnLabel.textContent = "AI Speaking";
+              pttBtn.style.background = "#15378a";
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -292,11 +320,16 @@
             talking = true;
             if (micTrack) micTrack.enabled = true;
             pttBtnLabel.textContent = "Listening...";
+            pttBtn.classList.remove('ai');
+            pttBtn.classList.add('user');
             pttBtn.style.background = "#60a5fa";
+            statusBanner.textContent = "You are talking...";
+            statusBanner.className = "user";
+            clearTimeout(userBannerTimeout);
           }
         };
 
-        rtAudio.addEventListener("playing", ()=> setAITalking());
+        rtAudio.addEventListener("playing", ()=> showAIBanner());
         rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; });
         rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; });
 
