@@ -17,184 +17,85 @@
     .app {
       width: 100%;
       max-width: 400px;
-      margin: auto;
       text-align: center;
-      padding: 0 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
     .header-voxtalk {
       font-size: 36px;
       font-weight: 900;
       color: #2563eb;
-      letter-spacing: 2px;
-      margin-bottom: 18px;
-      margin-top: 36px;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      display: inline-block;
+      margin: 30px 0 20px;
     }
     .header-voxtalk .tm {
       font-size: 22px;
       font-weight: 900;
       color: #2563eb;
-      position: absolute;
-      top: -13px;
-      right: -23px;
-      letter-spacing: 0.5px;
       vertical-align: super;
+      margin-left: 4px;
     }
     #statusBig {
-      font-size: 36px;
+      font-size: 28px;
       font-weight: 900;
-      margin: 12px 0 16px 0;
-      padding: 8px 0;
+      margin: 12px auto 16px;
+      padding: 10px;
       border-radius: 7px;
       background: #fff;
       color: #2563eb;
-      box-shadow: 0 2px 14px #60a5fa22;
-      width: 100%;
-      max-width: 400px;
-      min-height: 60px;
-      transition: background 0.2s, color 0.2s;
-      letter-spacing: 1.5px;
-      opacity: 0.9;
       border: 3px solid #60a5fa;
+      transition: background 0.2s, color 0.2s;
+      width: 100%;
+      max-width: 350px;
     }
-    #statusBig.ai {
-      background: #15378a; /* dark blue */
-      color: #fff;
-      border-color: #15378a;
-    }
-    #statusBig.user {
-      background: #60a5fa; /* light blue */
-      color: #fff;
-      border-color: #2563eb;
-    }
-    #statusBig.wait {
-      background: #fff;
-      color: #2563eb;
-      border-color: #60a5fa;
-    }
+    #statusBig.ai { background: #15378a; color: #fff; border-color: #15378a; }
+    #statusBig.user { background: #60a5fa; color: #fff; border-color: #2563eb; }
+    #statusBig.wait { background: #fff; color: #2563eb; border-color: #60a5fa; }
+
     #pttBtn {
-      width: 170px;
-      height: 170px;
+      width: 140px; height: 140px;
       border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      outline: none;
-      margin: 10px 0 0 0;
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: none; cursor: pointer;
+      font-size: 18px; font-weight: bold;
+      color: #fff; background: #60a5fa;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
-      user-select: none;
-      background: #60a5fa;
-      transition: background 0.2s;
+      margin-top: 12px;
     }
     #answer {
       width: 100%;
       min-height: 70px;
-      max-height: 220px;
       background: #f5f8ff;
       border: 1px solid #dbeafe;
       border-radius: 10px;
       margin-top: 20px;
-      padding: 14px 14px;
-      font-size: 17px;
+      padding: 14px;
+      font-size: 16px;
       overflow-y: auto;
       text-align: left;
-      color: #222;
-      font-family: inherit;
-      white-space: pre-line;
     }
-    .line { margin: 7px 0; }
-    .me { color: #60a5fa; font-weight: 700; }
-    .ai { color: #15378a; font-weight: 700; }
-    .muted { color: #b4c3e5; font-style: italic; font-size: 16px;}
-    #poweredBy {
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      color: #fff;
-      background: none;
-      font-size: 13px;
-      font-weight: 700;
-      opacity: 0.95;
-      font-family: inherit;
-      text-shadow: 0 1px 8px #2563eb55;
-      pointer-events: none;
-      border-radius: 7px;
-      padding: 4px 13px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      z-index: 100;
-      border: none;
-    }
-    #poweredBy .tm {
-      font-size: 14px;
-      font-weight: 900;
-      color: #fff;
-      margin-left: 2px;
-      vertical-align: super;
-      position: relative;
-      top: -4px;
-      opacity: 0.8;
-    }
-    #poweredBy .demo {
-      font-size: 12px;
-      color: #fff;
-      opacity: 0.5;
-      margin-left: 3px;
-      font-weight: 600;
-      letter-spacing: 1px;
-    }
-    @media (max-width: 480px) {
-      .app { max-width: 98vw; }
-      .header-voxtalk { font-size: 25px; }
-      .header-voxtalk .tm { font-size: 13px; top: -6px; right: -10px;}
-      #statusBig { font-size: 20px; min-height: 40px;}
-      #pttBtn { width: 90px; height: 90px; font-size: 12px; }
-      #answer { font-size: 13px; min-height: 30px; max-height: 120px;}
-      #poweredBy { font-size: 9px; padding: 2px 8px;}
-      #poweredBy .tm { font-size: 8px; top: -2px;}
-      #poweredBy .demo { font-size: 8px;}
-    }
+    .line { margin: 6px 0; }
+    .me { color: #60a5fa; font-weight: bold; }
+    .ai { color: #15378a; font-weight: bold; }
+    .muted { color: #b4c3e5; font-style: italic; }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="header-voxtalk">
-      VoxTalk
-      <span class="tm">™</span>
-    </div>
+    <div class="header-voxtalk">VoxTalk<span class="tm">™</span></div>
     <div id="statusBig" class="wait">WAIT</div>
-    <button id="pttBtn" aria-pressed="false">Start/Stop Listening</button>
+    <button id="pttBtn">🎤 Talk</button>
     <div id="answer"><div class="muted">No conversation yet.</div></div>
     <audio id="remote" autoplay playsinline></audio>
   </div>
-  <div id="poweredBy">
-    Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
-  </div>
 
   <script>
-    const statusBig = document.getElementById('statusBig');
-    const pttBtn = document.getElementById('pttBtn');
-    const answerEl = document.getElementById('answer');
-    const rtAudio = document.getElementById('remote');
+    const statusBig = document.getElementById("statusBig");
+    const pttBtn = document.getElementById("pttBtn");
+    const answerEl = document.getElementById("answer");
+    const rtAudio = document.getElementById("remote");
 
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
     let aiSpeaking = false;
     let dc;
 
-    // ---------------------------
-    // Centralized status manager
-    // ---------------------------
     function setStatus(state) {
       statusBig.className = state;
       if (state === "user") statusBig.textContent = "YOUR TURN TO TALK";
@@ -216,11 +117,8 @@
 
     function handleAI(active) {
       aiSpeaking = active;
-      if (active) {
-        setStatus("ai");
-      } else {
-        setStatus(talking ? "user" : "wait");
-      }
+      if (active) setStatus("ai");
+      else setStatus(talking ? "user" : "wait");
     }
 
     function renderTranscript() {
@@ -228,14 +126,9 @@
         answerEl.innerHTML = '<div class="muted">No conversation yet.</div>';
         return;
       }
-      answerEl.innerHTML = '';
-      transcript.forEach(line => {
-        const div = document.createElement('div');
-        div.className = 'line';
-        div.innerHTML = `<span class="${line.role}">${line.role==='me'?'You:':'AI:'}</span>
-                         <span class="text">${line.text}</span>`;
-        answerEl.appendChild(div);
-      });
+      answerEl.innerHTML = transcript.map(line =>
+        `<div class="line"><span class="${line.role}">${line.role==='me'?'You:':'AI:'}</span> ${line.text}</div>`
+      ).join("");
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
@@ -245,17 +138,7 @@
       renderTranscript();
     }
 
-    function closeSession() {
-      sessionActive = false;
-      talking = false;
-      aiSpeaking = false;
-      if (micTrack) try { micTrack.enabled = false; } catch {}
-      if (pc) try { pc.close(); } catch {}
-      setStatus("wait");
-    }
-
     async function initRealtime() {
-      closeSession();
       try {
         const s = await fetch("/session", { method:"POST" });
         const { client_secret, model, voice } = await s.json();
@@ -276,7 +159,7 @@
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
-              handleAI(true); // ensure dark blue while AI is streaming
+              handleAI(true);
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -303,21 +186,19 @@
         setStatus("wait");
         sessionActive = true;
 
-        // Button to toggle ASR state
         pttBtn.onclick = () => {
           if (!sessionActive) return;
           handleASR(!talking);
         };
 
-        // AI audio events
         rtAudio.addEventListener("playing", ()=> handleAI(true));
         rtAudio.addEventListener("ended",  ()=> handleAI(false));
         rtAudio.addEventListener("pause",  ()=> handleAI(false));
 
       } catch(err) {
+        console.error("Realtime init failed:", err);
         setStatus("wait");
-        sessionActive = false;
-        answerEl.innerHTML = '<div class="muted">Session error. Please reload the page.</div>';
+        answerEl.innerHTML = '<div class="muted">Session error. Please reload.</div>';
       }
     }
 
