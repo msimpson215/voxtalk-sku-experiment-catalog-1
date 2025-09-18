@@ -24,7 +24,7 @@ app.post("/session", async (req, res) => {
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
       voice: "alloy",
-      deepgramKey: process.env.DEEPGRAM_API_KEY // Optional: keep if needed elsewhere
+      deepgramKey: process.env.DEEPGRAM_API_KEY // Optional
     });
   } catch (e) {
     console.error("Session error:", e);
