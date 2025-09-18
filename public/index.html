@@ -64,10 +64,13 @@
       transition: background 0.2s;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
-      background: #60a5fa; /* Default to idle/light blue */
+      background: #60a5fa; /* Idle/light blue */
     }
-    #pttBtn.ai {
-      background: #15378a;
+    #pttBtn.ai-speaking {
+      background: #15378a !important; /* AI speaking: dark blue */
+    }
+    #pttBtn.user-speaking {
+      background: #60a5fa !important; /* User speaking: light blue */
     }
     #pttBtnLabel {
       font-size: 17px;
@@ -193,25 +196,26 @@
       transcript.push({role, text});
       renderTranscript();
     }
-    function setUserTalking() {
-      pttBtn.classList.remove('ai');
-      pttBtn.classList.add('user');
+
+    function setIdle() {
+      pttBtn.classList.remove('ai-speaking', 'user-speaking');
+      pttBtn.classList.add('user-speaking');
+      pttBtnLabel.textContent = "Start Talking";
       pttBtn.style.background = "#60a5fa";
+      pttBtn.disabled = false;
+    }
+    function setUserTalking() {
+      pttBtn.classList.remove('ai-speaking');
+      pttBtn.classList.add('user-speaking');
       pttBtnLabel.textContent = "Listening";
+      pttBtn.style.background = "#60a5fa";
       pttBtn.disabled = false;
     }
     function setAITalking() {
-      pttBtn.classList.remove('user');
-      pttBtn.classList.add('ai');
-      pttBtn.style.background = "#15378a";
+      pttBtn.classList.remove('user-speaking');
+      pttBtn.classList.add('ai-speaking');
       pttBtnLabel.textContent = "Speaking";
-      pttBtn.disabled = false;
-    }
-    function setIdle() {
-      pttBtn.classList.remove('ai');
-      pttBtn.classList.add('user');
-      pttBtn.style.background = "#60a5fa";
-      pttBtnLabel.textContent = "Start Talking";
+      pttBtn.style.background = "#15378a";
       pttBtn.disabled = false;
     }
     function closeSession() {
@@ -285,6 +289,7 @@
           }
         };
 
+        // AI voice events
         rtAudio.addEventListener("playing", ()=> setAITalking());
         rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; });
         rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; });
