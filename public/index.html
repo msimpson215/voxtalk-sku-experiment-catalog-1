@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <title>VoxTalk™</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:,">
   <style>
     body {
       margin:0;
@@ -63,7 +62,7 @@
       position: relative;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
-      background: #60a5fa; /* Light blue by default */
+      background: #60a5fa; /* Light blue default */
       transition: background 0.2s;
     }
     #pttBtn.speaking-ai {
@@ -197,22 +196,26 @@
       renderTranscript();
     }
 
+    // BUTTON COLOR LOGIC
     function setIdle() {
       pttBtn.classList.remove('speaking-ai', 'speaking-user');
       pttBtn.classList.add('speaking-user');
       pttBtnLabel.textContent = "Start Talking";
+      pttBtn.style.background = "#60a5fa";
       pttBtn.disabled = false;
     }
     function setUserTalking() {
       pttBtn.classList.remove('speaking-ai');
       pttBtn.classList.add('speaking-user');
       pttBtnLabel.textContent = "Listening";
+      pttBtn.style.background = "#60a5fa";
       pttBtn.disabled = false;
     }
     function setAITalking() {
       pttBtn.classList.remove('speaking-user');
       pttBtn.classList.add('speaking-ai');
       pttBtnLabel.textContent = "Speaking";
+      pttBtn.style.background = "#15378a";
       pttBtn.disabled = false;
     }
     function closeSession() {
