@@ -28,60 +28,70 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
     }
     .header-voxtalk .tm {
-      font-size: 15px;
-      margin-left: 2px;
-      opacity: 0.7;
+      font-size: 24px;
+      margin-left: 6px;
+      opacity: 0.9;
       vertical-align: super;
       position: relative;
-      top: -10px;
+      top: -14px;
       color: #3b82f6;
+      font-weight: 900;
+      text-shadow: 0px 0px 7px #15378a66;
     }
-    #pttBtn, #stopBtn {
-      margin-top: 32px;
-      width:160px;
-      height:60px;
-      border-radius:30px;
-      border:none;
-      cursor:pointer;
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      background: linear-gradient(90deg, #15378a 0%, #60a5fa 100%);
-      box-shadow: 0 6px 32px rgba(37,99,235,.22);
-      transition: background 0.4s;
+    #pttBtn {
+      margin-top: 52px;
+      width:140px; height:140px;
+      border-radius:50%; border:none; cursor:pointer;
+      position: relative;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      z-index: 2;
       outline: none;
-      margin-right:10px;
-      margin-left:10px;
+      overflow: hidden;
+      background: conic-gradient(from 120deg, #15378a 0%, #60a5fa 30%, #15378a 60%, #60a5fa 100%);
+      box-shadow:0 10px 32px rgba(37,99,235,.22);
+      transition: background 0.6s;
+      animation: swirlIdle 2.2s linear infinite;
+    }
+    @keyframes swirlIdle {
+      to { filter: hue-rotate(360deg);}
     }
     #pttBtn.listening {
-      background: linear-gradient(90deg, #22c55e 0%, #60a5fa 100%);
-      animation: swirlListen 1.1s linear infinite;
-    }
-    #pttBtn.speaking {
-      background: linear-gradient(90deg, #f59e42 0%, #60a5fa 100%);
-      animation: swirlSpeak 1.1s linear infinite;
-    }
-    #pttBtn.idle {
-      background: linear-gradient(90deg, #15378a 0%, #60a5fa 100%);
-      animation:none;
-    }
-    #stopBtn {
-      background: linear-gradient(90deg, #dc2626 0%, #f87171 100%);
-      color: #fff;
-      font-weight:700;
+      background: conic-gradient(from 120deg, #22c55e 0%, #60a5fa 40%, #22c55e 100%);
+      animation: swirlListen 1.2s linear infinite;
+      border: 3px solid #22c55e;
     }
     @keyframes swirlListen {
       to { filter: hue-rotate(180deg);}
     }
+    #pttBtn.speaking {
+      background: conic-gradient(from 120deg, #f59e42 0%, #60a5fa 40%, #f59e42 100%);
+      animation: swirlSpeak 1.2s linear infinite;
+      border: 3px solid #f59e42;
+    }
     @keyframes swirlSpeak {
       to { filter: hue-rotate(360deg);}
     }
+    #pttBtn.idle {
+      background: conic-gradient(from 120deg, #15378a 0%, #60a5fa 30%, #15378a 60%, #60a5fa 100%);
+      animation: swirlIdle 2.2s linear infinite;
+      border: 3px solid #15378a;
+    }
+    #pttBtnLabel {
+      position:absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      width:100%;
+      font-size: 18px; font-weight: 700; color: #fff; text-shadow: 0 1px 10px #0005;
+      pointer-events: none;
+    }
     #answer {
-      margin-top:20px; padding:12px; border:1px solid #ccc;
+      margin-top:18px; padding:9px; border:1px solid #ccc;
       border-radius:8px; background:white;
-      min-height:80px; text-align:left; font-size:14px;
-      max-height:230px; overflow-y:auto;
+      min-height:48px; max-height:110px;
+      text-align:left; font-size:14px;
+      overflow-y:auto;
       user-select: text;
+      box-sizing: border-box;
     }
     .line { margin:6px 0; }
     .me { color:#2563eb; font-weight:600; }
@@ -93,21 +103,42 @@
       right: 12px;
       bottom: 12px;
       color: #ffffff;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       border-radius: 9px;
-      padding: 5px 18px;
+      padding: 5px 20px;
       z-index: 100;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
       font-family: inherit;
-      opacity: 0.67;
+      opacity: 0.85;
       border: none;
       background: none;
       text-shadow: 0 1px 7px #0003;
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #poweredBy .tm {
+      font-size: 19px;
+      opacity: 0.9;
+      vertical-align: super;
+      position: relative;
+      top: -8px;
+      color: #3b82f6;
+      font-weight: 900;
+      text-shadow: 0px 0px 7px #15378a66;
+      margin-left:2px;
+    }
+    #poweredBy .year {
+      font-size: 14px;
+      color: #e0e0e0;
+      margin-left:6px;
+      font-weight: 600;
+      letter-spacing: 1px;
     }
     .emailForm {
-      margin-top: 16px;
+      margin-top: 10px;
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -115,16 +146,16 @@
       gap: 5px;
     }
     .emailForm input[type="email"] {
-      padding: 7px 9px;
-      font-size: 15px;
-      border-radius: 7px;
+      padding: 6px 8px;
+      font-size: 14px;
+      border-radius: 6px;
       border: 1px solid #ccc;
       outline: none;
-      min-width: 160px;
+      min-width: 120px;
     }
     .emailForm button {
-      padding: 7px 16px;
-      font-size: 15px;
+      padding: 6px 14px;
+      font-size: 14px;
       border-radius: 7px;
       border: none;
       background: linear-gradient(90deg, #3b82f6 0%, #1e40af 100%);
@@ -136,20 +167,25 @@
     .emailForm button:active { background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);}
     .emailSuccess {
       color: #22c55e;
-      font-size: 15px;
+      font-size: 14px;
       margin-top: 7px;
     }
     .emailError {
       color: #dc2626;
-      font-size: 15px;
+      font-size: 14px;
       margin-top: 7px;
     }
     @media(max-width:500px) {
       .app { max-width:99vw; }
       .header-voxtalk {font-size:23px;}
-      #pttBtn, #stopBtn {width:100px; height:40px;font-size:15px;}
-      #answer { font-size:13px; }
-      .emailForm input[type="email"] { min-width:110px;}
+      .header-voxtalk .tm {font-size:15px;top:-9px;}
+      #pttBtn { width:85px; height:85px; }
+      #pttBtnLabel {font-size:12px;}
+      #answer { font-size:12px; min-height:26px; max-height:60px;}
+      #poweredBy {font-size:11px;}
+      #poweredBy .tm {font-size:14px;top:-5px;}
+      .emailForm input[type="email"] { min-width:90px;font-size:12px;}
+      .emailForm button {font-size:12px;}
     }
   </style>
 </head>
@@ -158,10 +194,9 @@
     <div class="header-voxtalk">
       VoxTalk<span class="tm">™</span>
     </div>
-    <div style="margin-top:12px;">
-      <button id="pttBtn" class="idle" aria-pressed="false">Start Talking</button>
-      <button id="stopBtn" style="display:none;">Stop</button>
-    </div>
+    <button id="pttBtn" class="idle" aria-pressed="false">
+      <span id="pttBtnLabel">Start Talking</span>
+    </button>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
     <form id="emailForm" class="emailForm" autocomplete="off" spellcheck="false">
@@ -170,10 +205,12 @@
     </form>
     <div id="emailMsg"></div>
   </div>
-  <div id="poweredBy">Powered by VoxTalk</div>
+  <div id="poweredBy">
+    Powered by VoxTalk<span class="tm">™</span> <span class="year">2025</span>
+  </div>
   <script>
     const pttBtn   = document.getElementById('pttBtn');
-    const stopBtn  = document.getElementById('stopBtn');
+    const pttBtnLabel = document.getElementById('pttBtnLabel');
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
     const emailForm = document.getElementById('emailForm');
@@ -184,6 +221,8 @@
     let micTrack, pc, talking = false;
 
     function appendLine(role, text) {
+      // Only show actual conversation, not (Listening...) or (Stopped)
+      if (text === "(Listening...)" || text === "(Stopped)") return;
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
       const div = document.createElement('div');
       div.className = 'line';
@@ -196,20 +235,20 @@
     function setIdle() {
       pttBtn.classList.remove('listening','speaking');
       pttBtn.classList.add('idle');
-      pttBtn.textContent = "Start Talking";
-      stopBtn.style.display = "none";
+      pttBtnLabel.textContent = "Start Talking";
+      pttBtn.disabled = false;
     }
     function setListening() {
       pttBtn.classList.remove('idle','speaking');
       pttBtn.classList.add('listening');
-      pttBtn.textContent = "Listening...";
-      stopBtn.style.display = "";
+      pttBtnLabel.textContent = "Listening...";
+      pttBtn.disabled = false;
     }
     function setSpeaking() {
       pttBtn.classList.remove('idle','listening');
       pttBtn.classList.add('speaking');
-      pttBtn.textContent = "Speaking...";
-      stopBtn.style.display = "";
+      pttBtnLabel.textContent = "Speaking...";
+      pttBtn.disabled = false;
     }
 
     async function initRealtime() {
@@ -259,18 +298,17 @@
         setIdle();
 
         pttBtn.onclick = () => {
-          if (talking) return;
-          talking = true;
-          micTrack.enabled = true;
-          setListening();
-          appendLine("me","(Listening...)");
-        };
-        stopBtn.onclick = () => {
-          if (!talking) return;
-          talking = false;
-          micTrack.enabled = false;
-          setIdle();
-          appendLine("me","(Stopped)");
+          if (talking) {
+            // Stop listening
+            talking = false;
+            micTrack.enabled = false;
+            setIdle();
+          } else {
+            // Start listening
+            talking = true;
+            micTrack.enabled = true;
+            setListening();
+          }
         };
 
         rtAudio.addEventListener("playing", ()=> setSpeaking());
@@ -283,8 +321,6 @@
       }
     }
     initRealtime();
-
-    // Remove the custom greeting! (No hardcoded greeting.)
 
     // Email transcript handler
     emailForm.onsubmit = async (e) => {
