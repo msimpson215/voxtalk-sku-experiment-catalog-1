@@ -62,7 +62,7 @@
       position: relative;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
-      background: #60a5fa;
+      background: #60a5fa; /* Light blue default */
       transition: background 0.2s;
     }
     #pttBtn.speaking-ai {
@@ -70,6 +70,7 @@
     }
     #pttBtn.speaking-user {
       background: #60a5fa !important;
+      box-shadow: 0 0 10px 2px #60a5fa99;
     }
     #pttBtnLabel {
       font-size: 17px;
@@ -139,21 +140,6 @@
       font-weight: 600;
       letter-spacing: 1px;
     }
-    #debug {
-      font-size: 14px;
-      background: #fff;
-      color: #2563eb;
-      border-radius: 8px;
-      padding: 5px 10px;
-      margin-top: 14px;
-      box-shadow: 0 2px 8px #2563eb22;
-      min-height: 30px;
-      font-family: monospace;
-      width: 100%;
-      max-width: 400px;
-      text-align: left;
-      opacity: 0.9;
-    }
     @media (max-width: 480px) {
       .app { max-width: 98vw; }
       .header-voxtalk { font-size: 25px; }
@@ -163,7 +149,6 @@
       #poweredBy { font-size: 9px; padding: 2px 8px;}
       #poweredBy .tm { font-size: 8px; top: -2px;}
       #poweredBy .demo { font-size: 8px;}
-      #debug { font-size: 10px; max-width: 98vw;}
     }
   </style>
 </head>
@@ -178,7 +163,6 @@
     </button>
     <div id="answer"><div class="muted">No conversation yet.</div></div>
     <audio id="remote" autoplay playsinline></audio>
-    <div id="debug"></div>
   </div>
   <div id="poweredBy">
     Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
@@ -188,15 +172,10 @@
     const pttBtnLabel = document.getElementById('pttBtnLabel');
     const answerEl = document.getElementById('answer');
     const rtAudio = document.getElementById('remote');
-    const debugEl = document.getElementById('debug');
 
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
-
-    function logDebug(msg) {
-      debugEl.textContent = msg;
-      console.log(msg);
-    }
+    let userFlashTimeout;
 
     function renderTranscript() {
       if (!transcript.length) {
@@ -217,31 +196,33 @@
       if (!text || text === "(Listening...)" || text === "(Stopped)") return;
       transcript.push({role, text});
       renderTranscript();
+      if(role === "me") {
+        flashUserTalking();
+      }
     }
 
     function setIdle() {
       pttBtn.classList.remove('speaking-ai', 'speaking-user');
-      pttBtn.classList.add('speaking-user');
       pttBtnLabel.textContent = "Start Talking";
       pttBtn.style.background = "#60a5fa";
-      pttBtn.disabled = false;
-      logDebug("Idle: Button light blue (#60a5fa)");
+      clearTimeout(userFlashTimeout);
     }
-    function setUserTalking() {
+    function flashUserTalking() {
       pttBtn.classList.remove('speaking-ai');
       pttBtn.classList.add('speaking-user');
-      pttBtnLabel.textContent = "Listening";
+      pttBtnLabel.textContent = "You spoke";
       pttBtn.style.background = "#60a5fa";
-      pttBtn.disabled = false;
-      logDebug("User Talking: Button light blue (#60a5fa)");
+      clearTimeout(userFlashTimeout);
+      userFlashTimeout = setTimeout(() => {
+        setIdle();
+      }, 2000);
     }
     function setAITalking() {
       pttBtn.classList.remove('speaking-user');
       pttBtn.classList.add('speaking-ai');
-      pttBtnLabel.textContent = "Speaking";
+      pttBtnLabel.textContent = "AI Speaking";
       pttBtn.style.background = "#15378a";
-      pttBtn.disabled = false;
-      logDebug("AI Speaking: Button dark blue (#15378a)");
+      clearTimeout(userFlashTimeout);
     }
     function closeSession() {
       sessionActive = false;
@@ -266,7 +247,6 @@
         pc.ontrack = (ev)=> {
           rtAudio.srcObject = ev.streams[0];
           rtAudio.play().catch(()=>{});
-          logDebug("pc.ontrack: audio stream attached");
         };
 
         const dc = pc.createDataChannel("events");
@@ -275,13 +255,10 @@
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
               setAITalking();
-              logDebug("DataChannel: AI response event - Button dark blue");
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
-          } catch (err) {
-            logDebug("DataChannel error: " + err);
-          }
+          } catch {}
         };
 
         const offer = await pc.createOffer({ offerToReceiveAudio:true });
@@ -311,25 +288,22 @@
             if (micTrack) micTrack.enabled = false;
             setIdle();
             if (rtAudio) rtAudio.pause();
-            logDebug("Button click: stop listening, set idle");
           } else {
             talking = true;
             if (micTrack) micTrack.enabled = true;
-            setUserTalking();
-            logDebug("Button click: start listening, set user talking");
+            pttBtnLabel.textContent = "Listening...";
+            pttBtn.style.background = "#60a5fa";
           }
         };
 
-        // AI voice events
-        rtAudio.addEventListener("playing", ()=> { setAITalking(); logDebug("rtAudio.playing: AI speaking"); });
-        rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; logDebug("rtAudio.ended: AI done"); });
-        rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; logDebug("rtAudio.pause: AI done"); });
+        rtAudio.addEventListener("playing", ()=> setAITalking());
+        rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; });
+        rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; });
 
       } catch(err) {
         setIdle();
         sessionActive = false;
         answerEl.innerHTML = '<div class="muted">Session error. Please reload the page.</div>';
-        logDebug("Realtime init failed: " + err);
       }
     }
     initRealtime();
