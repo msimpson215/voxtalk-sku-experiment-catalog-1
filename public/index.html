@@ -9,7 +9,7 @@
     body {
       margin:0;
       font-family:system-ui,sans-serif;
-      background: #fff;
+      background: radial-gradient(circle at 50% 20%, #dbeafe, #60a5fa 40%, #2563eb 90%);
       min-height:100vh;
       display: flex;
       align-items: center;
@@ -42,7 +42,7 @@
       color: #2563eb;
       position: absolute;
       top: -13px;
-      right: -24px;
+      right: -23px;
       letter-spacing: 0.5px;
       vertical-align: super;
     }
@@ -64,14 +64,12 @@
       transition: background 0.2s;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
+      background: #60a5fa; /* Default to "you speaking" color */
     }
-    #pttBtn.idle {
-      background: #2563eb;
-    }
-    #pttBtn.listening {
+    #pttBtn.user {
       background: #60a5fa;
     }
-    #pttBtn.speaking {
+    #pttBtn.ai {
       background: #15378a;
     }
     #pttBtnLabel {
@@ -108,6 +106,7 @@
       right: 16px;
       bottom: 16px;
       color: #fff;
+      background: none;
       font-size: 13px;
       font-weight: 700;
       letter-spacing: 1px;
@@ -115,13 +114,13 @@
       font-family: inherit;
       text-shadow: 0 1px 8px #2563eb55;
       pointer-events: none;
-      background: none;
       border-radius: 7px;
       padding: 4px 13px;
       display: flex;
       align-items: center;
       gap: 3px;
       z-index: 100;
+      border: none;
     }
     #poweredBy .tm {
       font-size: 14px;
@@ -144,7 +143,7 @@
     @media (max-width: 480px) {
       .app { max-width: 98vw; }
       .header-voxtalk { font-size: 25px; }
-      .header-voxtalk .tm { font-size: 13px; top: -6px; right: -11px;}
+      .header-voxtalk .tm { font-size: 13px; top: -6px; right: -10px;}
       #pttBtn { width: 90px; height: 90px; font-size: 12px; }
       #answer { font-size: 13px; min-height: 30px; max-height: 120px;}
       #poweredBy { font-size: 9px; padding: 2px 8px;}
@@ -159,7 +158,7 @@
       VoxTalk
       <span class="tm">™</span>
     </div>
-    <button id="pttBtn" class="idle" aria-pressed="false">
+    <button id="pttBtn" class="user" aria-pressed="false">
       <span id="pttBtnLabel">Start Talking</span>
     </button>
     <div id="answer"><div class="muted">No conversation yet.</div></div>
@@ -197,22 +196,22 @@
       transcript.push({role, text});
       renderTranscript();
     }
-    function setIdle() {
-      pttBtn.classList.remove('listening','speaking');
-      pttBtn.classList.add('idle');
-      pttBtnLabel.textContent = "Start Talking";
-      pttBtn.disabled = false;
-    }
-    function setListening() {
-      pttBtn.classList.remove('idle','speaking');
-      pttBtn.classList.add('listening');
+    function setUserTalking() {
+      pttBtn.classList.remove('ai');
+      pttBtn.classList.add('user');
       pttBtnLabel.textContent = "Listening";
       pttBtn.disabled = false;
     }
-    function setSpeaking() {
-      pttBtn.classList.remove('idle','listening');
-      pttBtn.classList.add('speaking');
+    function setAITalking() {
+      pttBtn.classList.remove('user');
+      pttBtn.classList.add('ai');
       pttBtnLabel.textContent = "Speaking";
+      pttBtn.disabled = false;
+    }
+    function setIdle() {
+      pttBtn.classList.remove('ai');
+      pttBtn.classList.add('user');
+      pttBtnLabel.textContent = "Start Talking";
       pttBtn.disabled = false;
     }
     function closeSession() {
@@ -245,6 +244,7 @@
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
+              setAITalking();
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -281,11 +281,11 @@
           } else {
             talking = true;
             if (micTrack) micTrack.enabled = true;
-            setListening();
+            setUserTalking();
           }
         };
 
-        rtAudio.addEventListener("playing", ()=> setSpeaking());
+        rtAudio.addEventListener("playing", ()=> setAITalking());
         rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; });
         rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; });
 
