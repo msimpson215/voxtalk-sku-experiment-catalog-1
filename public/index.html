@@ -13,12 +13,11 @@
       position: relative;
     }
     .app { text-align:center; width:100%; max-width:420px; margin:0 auto; position:relative;}
-    /* HEADER */
     .header-voxtalk {
       margin-top: 38px;
       font-size: 36px;
       font-weight: 900;
-      color: #15378a; /* Dark blue */
+      color: #15378a;
       letter-spacing: 2px;
       text-shadow: 0 1px 10px #fff2;
       display: flex;
@@ -37,7 +36,6 @@
       top: -10px;
       color: #3b82f6;
     }
-    /* BUTTON */
     #pttBtn {
       margin-top: 52px;
       width:180px; height:180px;
@@ -64,23 +62,16 @@
     @keyframes swirlSpeak {
       to { filter: hue-rotate(180deg);}
     }
-    /* Button label removed for minimal look */
-    /* Speaking label below button */
-    #speakingStatus {
-      margin-top: 18px;
-      font-size: 17px;
-      color: #15378a;
-      font-weight: 600;
-      letter-spacing: 1.2px;
-      opacity: 0;
-      min-height: 22px;
-      transition: opacity 0.3s;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+    #answer {
+      margin-top:20px; padding:12px; border:1px solid #ccc;
+      border-radius:8px; background:white;
+      min-height:80px; text-align:left; font-size:14px;
     }
-    #pttBtn.speaking + #speakingStatus {
-      opacity: 1;
-    }
-    /* Powered by box */
+    .line { margin:6px 0; }
+    .me { color:#2563eb; font-weight:600; }
+    .ai { color:#065f46; font-weight:600; }
+    .text { color:#111; }
+    .muted { color:#777; font-style:italic; }
     #poweredBy {
       position: fixed;
       right: 12px;
@@ -103,7 +94,7 @@
       .app { max-width:99vw; }
       .header-voxtalk {font-size:23px;}
       #pttBtn { width:110px; height:110px; }
-      #speakingStatus { font-size:13px; }
+      #answer { font-size:13px; }
     }
   </style>
 </head>
@@ -112,32 +103,97 @@
     <div class="header-voxtalk">
       VoxTalk<span class="tm">™</span>
     </div>
-    <!-- Swirl gradient button, color animates on speaking -->
     <button id="pttBtn" aria-pressed="false"></button>
-    <div id="speakingStatus"></div>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <audio id="remote" autoplay playsinline></audio>
   </div>
   <div id="poweredBy">Powered by VoxTalk</div>
   <script>
     const pttBtn   = document.getElementById('pttBtn');
-    const speakingStatus = document.getElementById('speakingStatus');
-    let talking = false;
+    const answerEl = document.getElementById('answer');
+    const rtAudio  = document.getElementById('remote');
 
-    function setSpeaking(on) {
-      if(on) {
-        pttBtn.classList.add('speaking');
-        speakingStatus.textContent = "Speaking...";
-      } else {
-        pttBtn.classList.remove('speaking');
-        speakingStatus.textContent = "";
+    function appendLine(role, text) {
+      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
+                       <span class="text">${text}</span>`;
+      answerEl.appendChild(div);
+      answerEl.scrollTop = answerEl.scrollHeight;
+    }
+    function setListening(on) { pttBtn.classList.toggle('listening', on); }
+    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
+
+    async function initRealtime() {
+      try {
+        const s = await fetch("/session", { method:"POST" });
+        const { client_secret, model, voice } = await s.json();
+
+        const pc = new RTCPeerConnection();
+        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const micTrack = mic.getTracks()[0];
+        micTrack.enabled = false;
+        pc.addTrack(micTrack, mic);
+
+        pc.ontrack = (ev)=> {
+          rtAudio.srcObject = ev.streams[0];
+          rtAudio.play().catch(()=>{});
+        };
+
+        const dc = pc.createDataChannel("events");
+        dc.onmessage = (e)=> {
+          try {
+            const evt = JSON.parse(e.data);
+            if (evt.type === "response.message.delta") {
+              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              if (chunk) appendLine("ai", chunk);
+            }
+          } catch {}
+        };
+
+        const offer = await pc.createOffer({ offerToReceiveAudio:true });
+        await pc.setLocalDescription(offer);
+
+        const r = await fetch(
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
+          {
+            method:"POST",
+            headers: {
+              "Authorization":`Bearer ${client_secret.value}`,
+              "Content-Type":"application/sdp"
+            },
+            body: offer.sdp
+          }
+        );
+        const answer = { type:"answer", sdp: await r.text() };
+        await pc.setRemoteDescription(answer);
+
+        let talking = false;
+        pttBtn.onclick = () => {
+          talking = !talking;
+          micTrack.enabled = talking;
+          setListening(talking);
+          if (talking) {
+            appendLine("me","(Listening...)");
+          } else {
+            setListening(false); setSpeaking(false);
+            appendLine("me","(Stopped)");
+          }
+        };
+
+        rtAudio.addEventListener("playing", ()=> setSpeaking(true));
+        rtAudio.addEventListener("ended",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+        rtAudio.addEventListener("pause",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+
+      } catch(err) {
+        console.error("Realtime init failed", err);
       }
     }
+    initRealtime();
 
-    pttBtn.onclick = () => {
-      talking = !talking;
-      setSpeaking(talking);
-    };
-
-    setSpeaking(false);
+    // Add your custom greeting on load!
+    appendLine("ai", "Hello, this is VoxTalk. I was created by your dad, Marty Simpson.<br><br>Hello Mia and Rachel, nice to meet you!<br><br>You can ask me anything you would like.");
   </script>
 </body>
 </html>
