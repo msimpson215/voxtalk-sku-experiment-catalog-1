@@ -7,7 +7,7 @@
   <style>
     body {
       margin:0;
-      font-family:system-ui,sans-serif;
+      font-family:sans-serif;
       background: radial-gradient(circle at 50% 20%, #dbeafe, #60a5fa 40%, #2563eb 90%);
       min-height:100vh;
       display: flex;
@@ -28,9 +28,8 @@
       font-size: 36px;
       font-weight: 900;
       color: #2563eb;
-      position: relative;
       letter-spacing: 2px;
-      margin-bottom: 28px;
+      margin-bottom: 18px;
       margin-top: 36px;
       font-family: 'Segoe UI', system-ui, sans-serif;
       display: inline-block;
@@ -45,6 +44,38 @@
       letter-spacing: 0.5px;
       vertical-align: super;
     }
+    #statusBig {
+      font-size: 36px;
+      font-weight: 900;
+      margin: 12px 0 16px 0;
+      padding: 8px 0;
+      border-radius: 7px;
+      background: #fff;
+      color: #2563eb;
+      box-shadow: 0 2px 14px #60a5fa22;
+      width: 100%;
+      max-width: 400px;
+      min-height: 60px;
+      transition: background 0.2s, color 0.2s;
+      letter-spacing: 1.5px;
+      opacity: 0.9;
+      border: 3px solid #60a5fa;
+    }
+    #statusBig.ai {
+      background: #15378a;
+      color: #fff;
+      border-color: #15378a;
+    }
+    #statusBig.user {
+      background: #60a5fa;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    #statusBig.wait {
+      background: #fff;
+      color: #2563eb;
+      border-color: #60a5fa;
+    }
     #pttBtn {
       width: 170px;
       height: 170px;
@@ -52,34 +83,17 @@
       border: none;
       cursor: pointer;
       outline: none;
-      margin: 20px 0 0 0;
+      margin: 10px 0 0 0;
       font-size: 20px;
       font-weight: 700;
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
       background: #60a5fa;
       transition: background 0.2s;
-    }
-    #pttBtn.ai {
-      background: #15378a !important;
-    }
-    #pttBtn.user {
-      background: #60a5fa !important;
-    }
-    #pttBtnLabel {
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      text-align: center;
-      pointer-events: none;
-      user-select:none;
-      width: 100%;
-      display: block;
     }
     #answer {
       width: 100%;
@@ -93,7 +107,6 @@
       font-size: 17px;
       overflow-y: auto;
       text-align: left;
-      box-sizing: border-box;
       color: #222;
       font-family: inherit;
       white-space: pre-line;
@@ -110,7 +123,6 @@
       background: none;
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: 1px;
       opacity: 0.95;
       font-family: inherit;
       text-shadow: 0 1px 8px #2563eb55;
@@ -145,12 +157,12 @@
       .app { max-width: 98vw; }
       .header-voxtalk { font-size: 25px; }
       .header-voxtalk .tm { font-size: 13px; top: -6px; right: -10px;}
+      #statusBig { font-size: 20px; min-height: 40px;}
       #pttBtn { width: 90px; height: 90px; font-size: 12px; }
       #answer { font-size: 13px; min-height: 30px; max-height: 120px;}
       #poweredBy { font-size: 9px; padding: 2px 8px;}
       #poweredBy .tm { font-size: 8px; top: -2px;}
       #poweredBy .demo { font-size: 8px;}
-      #pttBtnLabel { font-size: 13px;}
     }
   </style>
 </head>
@@ -160,9 +172,8 @@
       VoxTalk
       <span class="tm">™</span>
     </div>
-    <button id="pttBtn" class="user" aria-pressed="false">
-      <span id="pttBtnLabel">Start Talking</span>
-    </button>
+    <div id="statusBig" class="wait">WAIT</div>
+    <button id="pttBtn" aria-pressed="false">Start/Stop Listening</button>
     <div id="answer"><div class="muted">No conversation yet.</div></div>
     <audio id="remote" autoplay playsinline></audio>
   </div>
@@ -170,40 +181,29 @@
     Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
   </div>
   <script>
-    const pttBtn     = document.getElementById('pttBtn');
-    const pttBtnLabel= document.getElementById('pttBtnLabel');
-    const answerEl   = document.getElementById('answer');
-    const rtAudio    = document.getElementById('remote');
+    const statusBig = document.getElementById('statusBig');
+    const pttBtn = document.getElementById('pttBtn');
+    const answerEl = document.getElementById('answer');
+    const rtAudio = document.getElementById('remote');
 
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
+    let aiSpeaking = false;
 
-    function updateButtonState() {
-      if (!transcript.length) {
-        pttBtn.classList.remove('ai','user');
-        pttBtn.classList.add('user');
-        pttBtnLabel.textContent = "Start Talking";
-        pttBtn.style.background = "#60a5fa";
-        return;
-      }
-      const lastLine = transcript[transcript.length - 1];
-      if (lastLine.role === 'ai') {
-        pttBtn.classList.remove('user');
-        pttBtn.classList.add('ai');
-        pttBtnLabel.textContent = "AI is talking";
-        pttBtn.style.background = "#15378a";
-      } else if (lastLine.role === 'me') {
-        pttBtn.classList.remove('ai');
-        pttBtn.classList.add('user');
-        pttBtnLabel.textContent = "You are talking";
-        pttBtn.style.background = "#60a5fa";
+    function setStatus(type) {
+      statusBig.className = type;
+      if (type === "user") {
+        statusBig.textContent = "YOUR TURN TO TALK";
+      } else if (type === "ai") {
+        statusBig.textContent = "AI IS TALKING";
+      } else {
+        statusBig.textContent = "WAIT";
       }
     }
 
     function renderTranscript() {
       if (!transcript.length) {
         answerEl.innerHTML = '<div class="muted">No conversation yet.</div>';
-        updateButtonState();
         return;
       }
       answerEl.innerHTML = '';
@@ -215,8 +215,8 @@
         answerEl.appendChild(div);
       });
       answerEl.scrollTop = answerEl.scrollHeight;
-      updateButtonState();
     }
+
     function appendLine(role, text) {
       if (!text || text === "(Listening...)" || text === "(Stopped)") return;
       transcript.push({role, text});
@@ -226,10 +226,10 @@
     function closeSession() {
       sessionActive = false;
       talking = false;
+      aiSpeaking = false;
       if (micTrack) try { micTrack.enabled = false; } catch {}
       if (pc) try { pc.close(); } catch {}
-      transcript = [];
-      renderTranscript();
+      setStatus("wait");
     }
 
     async function initRealtime() {
@@ -254,6 +254,8 @@
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
+              setStatus("ai");
+              aiSpeaking = true;
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -277,7 +279,7 @@
         const answer = { type:"answer", sdp: await r.text() };
         await pc.setRemoteDescription(answer);
 
-        renderTranscript();
+        setStatus("wait");
         sessionActive = true;
 
         pttBtn.onclick = () => {
@@ -285,26 +287,31 @@
           if (talking) {
             talking = false;
             if (micTrack) micTrack.enabled = false;
+            setStatus("wait");
+            if (rtAudio) rtAudio.pause();
           } else {
             talking = true;
             if (micTrack) micTrack.enabled = true;
+            setStatus("user");
             appendLine("me", "(Listening...)");
           }
         };
 
         rtAudio.addEventListener("playing", ()=> {
-          // Optionally, you could append a line here for "ai" but that's handled by transcript.
+          setStatus("ai");
+          aiSpeaking = true;
         });
         rtAudio.addEventListener("ended", ()=> {
-          // Optionally, you could append a line here for "ai" ended.
+          aiSpeaking = false;
+          setStatus(talking ? "user" : "wait");
         });
         rtAudio.addEventListener("pause", ()=> {
-          // Optionally, you could append a line here for "ai" paused.
+          aiSpeaking = false;
+          setStatus(talking ? "user" : "wait");
         });
 
       } catch(err) {
-        transcript = [];
-        renderTranscript();
+        setStatus("wait");
         sessionActive = false;
         answerEl.innerHTML = '<div class="muted">Session error. Please reload the page.</div>';
       }
