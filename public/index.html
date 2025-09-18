@@ -2,77 +2,159 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk</title>
+  <title>VoxTalk™</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
-  <!-- ... (styles unchanged) ... -->
   <style>
     body {
       margin:0; font-family:system-ui,sans-serif;
       display:grid; place-items:center; min-height:100vh;
       background: radial-gradient(circle at 50% 20%, #dbeafe, #93c5fd 40%, #1e3a8a 90%);
+      position: relative;
     }
-    .app { text-align:center; max-width:600px; }
-    .demo-label { font-size:12px; color:#111; margin-bottom:4px; }
-    h1 { margin:6px 0; font-size:22px; }
-    #pttBtn { width:120px; height:120px; border-radius:50%; border:none; cursor:pointer;
+    .app { text-align:center; max-width:700px; position:relative; }
+    h1 {
+      margin:12px 0 14px 0;
+      font-size:32px;
+      font-family:inherit;
+      font-weight:900;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 2px 10px #0004;
+      position: relative;
+      display: inline-block;
+    }
+    /* Trademark styling */
+    h1 .tm {
+      font-size: 14px;
+      position: absolute;
+      top: 3px;
+      right: -22px;
+      color: #fff;
+      font-weight: normal;
+      opacity: 0.7;
+      vertical-align: super;
+      text-shadow: 0 2px 8px #0005;
+    }
+    #pttBtn {
+      width:120px; height:120px; border-radius:50%; border:none; cursor:pointer;
       background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
       box-shadow:0 6px 18px rgba(37,99,235,.3); transition: transform 0.15s ease, box-shadow 0.3s ease;
       position: relative;
     }
-    #pttBtn:hover { transform: scale(1.02); }
-    #pttBtn:active { transform: scale(0.95); }
-    #pttBtn.listening { animation: listenPulse 1.6s ease-in-out infinite; }
-    @keyframes listenPulse { 0% { box-shadow:0 0 0 0 rgba(59,130,246,.7); }
-      50% { box-shadow:0 0 0 20px rgba(59,130,246,0); }
-      100% { box-shadow:0 0 0 0 rgba(59,130,246,0); }
+    /* STOP BUTTON STYLES */
+    #stopBtn {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      border: 4px solid #3b82f6;
+      background: radial-gradient(circle at 45% 50%, #222 60%, #1e40af 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow:0 8px 24px rgba(59,130,246,.4);
+      cursor: pointer;
+      font-size: 22px;
+      font-weight: bold;
+      color: white;
+      z-index: 10;
+      overflow: hidden;
+      outline: none;
+      transition: box-shadow 0.2s;
     }
-    #pttBtn.speaking::before {
-      content:""; position:absolute; inset:0; border-radius:50%;
-      background: conic-gradient(from 0deg, #60a5fa, #2563eb, #1e40af, #60a5fa);
-      animation: swirl 2s linear infinite;
-      -webkit-mask: radial-gradient(circle, rgba(0,0,0,0) 65%, rgba(0,0,0,1) 66%);
-              mask: radial-gradient(circle, rgba(0,0,0,0) 65%, rgba(0,0,0,1) 66%);
+    #stopBtn .smoke {
+      position: absolute;
+      width: 140px; height: 140px;
+      left: 0; top: 0;
+      pointer-events: none;
+      border-radius: 50%;
+      background: repeating-radial-gradient(circle,#fff 1px,#fff8 8px,#fff0 13px,#fff0 100px);
+      opacity: 0.35;
+      animation: smokeIdle 5s linear infinite;
+      z-index: 0;
     }
-    @keyframes swirl { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    #stopBtn.speaking .smoke {
+      animation: smokeActive 1.2s linear infinite;
+      opacity: 0.6;
+    }
+    @keyframes smokeIdle {
+      0% { transform: scale(1) rotate(0deg);}
+      100% { transform: scale(1.05) rotate(360deg);}
+    }
+    @keyframes smokeActive {
+      0% { transform: scale(1.03) rotate(0deg);}
+      100% { transform: scale(1.3) rotate(360deg);}
+    }
+    #stopBtnLabel {
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 7px #000a;
+      letter-spacing: 2px;
+    }
+    .app { position: relative; min-height: 400px; }
     #answer {
-      margin-top:20px; padding:12px; border:1px solid #ccc;
-      border-radius:8px; background:white;
-      min-height:80px; text-align:left; font-size:14px;
+      margin-top:180px; /* space for button */
+      padding:14px 24px;
+      border:1px solid #ccc;
+      border-radius:18px;
+      background:white;
+      min-height:40px;
+      height: 65px;
+      max-height: 90px;
+      width: 94%;
+      max-width: 680px;
+      text-align:left;
+      font-size:15px;
+      box-sizing: border-box;
+      overflow-y:auto;
+      margin-left:auto;
+      margin-right:auto;
+      /* elongate, less vertical, more horizontal */
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
     .line { margin:6px 0; }
     .me { color:#2563eb; font-weight:600; }
     .ai { color:#065f46; font-weight:600; }
     .text { color:#111; }
     .muted { color:#777; font-style:italic; }
-    #stopBtn {
-      margin-top: 14px;
-      padding: 10px 24px;
-      font-size: 14px;
-      background: #ef4444;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      opacity: 0.8;
+    /* Powered by box */
+    #poweredBy {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      background: rgba(255,255,255,0.96);
+      color: #1e40af;
+      font-size: 16px;
       font-weight: bold;
-      display: none;
+      border-radius: 10px;
+      padding: 8px 24px;
+      box-shadow: 0 2px 14px #0002;
+      z-index: 100;
+      letter-spacing: 1px;
+      font-family: inherit;
+      opacity: 0.88;
     }
-    #stopBtn.active {
-      display: inline-block;
+    @media(max-width:700px) {
+      #answer { width:98%; max-width:100vw; }
+      .app { max-width:98vw; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">Demo</p>
-    <h1>Talk to VoxTalk</h1>
+    <h1>VoxTal<span class="tm">™</span>k</h1>
     <button id="pttBtn" aria-pressed="false"></button>
-    <button id="stopBtn">STOP</button>
+    <!-- STOP BUTTON -->
+    <button id="stopBtn" title="Stop">
+      <span class="smoke"></span>
+      <span id="stopBtnLabel">STOP</span>
+    </button>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
   </div>
-
+  <div id="poweredBy">Powered by VoxTalk</div>
   <script>
     const pttBtn   = document.getElementById('pttBtn');
     const stopBtn  = document.getElementById('stopBtn');
@@ -88,17 +170,19 @@
       answerEl.appendChild(div);
       answerEl.scrollTop = answerEl.scrollHeight;
     }
-    function setListening(on) { pttBtn.classList.toggle('listening', on); }
-    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
 
-    let micTrack;
-    let talking = false;
+    function setSpeaking(on) {
+      if(on) stopBtn.classList.add('speaking');
+      else stopBtn.classList.remove('speaking');
+    }
+
+    let micTrack, talking = false, pc;
     async function initRealtime() {
       try {
         const s = await fetch("/session", { method:"POST" });
         const { client_secret, model, voice } = await s.json();
 
-        const pc = new RTCPeerConnection();
+        pc = new RTCPeerConnection();
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
         micTrack = mic.getTracks()[0];
         micTrack.enabled = false;
@@ -140,35 +224,36 @@
         pttBtn.onclick = () => {
           talking = !talking;
           micTrack.enabled = talking;
-          setListening(talking);
-          stopBtn.classList.toggle('active', talking);
           if (talking) {
             appendLine("me","(Listening...)");
           } else {
-            setListening(false); setSpeaking(false);
             appendLine("me","(Stopped)");
           }
         };
 
+        // IMMEDIATE STOP BUTTON
         stopBtn.onclick = () => {
           if (micTrack && talking) {
             micTrack.enabled = false;
             talking = false;
-            setListening(false);
-            setSpeaking(false);
-            stopBtn.classList.remove('active');
             appendLine("me", "(Stopped by STOP button)");
           }
+          // Also immediately stop remote audio if playing
+          if (!rtAudio.paused) {
+            rtAudio.pause();
+            rtAudio.currentTime = 0;
+          }
+          setSpeaking(false);
         };
 
         rtAudio.addEventListener("playing", ()=> setSpeaking(true));
-        rtAudio.addEventListener("ended",   ()=> { setSpeaking(false); setListening(false); talking=false; stopBtn.classList.remove('active'); });
-        rtAudio.addEventListener("pause",   ()=> { setSpeaking(false); setListening(false); talking=false; stopBtn.classList.remove('active'); });
-
+        rtAudio.addEventListener("ended",   ()=> setSpeaking(false));
+        rtAudio.addEventListener("pause",   ()=> setSpeaking(false));
       } catch(err) {
         console.error("Realtime init failed", err);
       }
     }
+
     initRealtime();
 
     // Add your custom greeting on load!
