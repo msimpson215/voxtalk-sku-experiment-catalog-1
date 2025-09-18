@@ -178,9 +178,32 @@
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
 
+    function updateButtonState() {
+      if (!transcript.length) {
+        pttBtn.classList.remove('ai','user');
+        pttBtn.classList.add('user');
+        pttBtnLabel.textContent = "Start Talking";
+        pttBtn.style.background = "#60a5fa";
+        return;
+      }
+      const lastLine = transcript[transcript.length - 1];
+      if (lastLine.role === 'ai') {
+        pttBtn.classList.remove('user');
+        pttBtn.classList.add('ai');
+        pttBtnLabel.textContent = "AI is talking";
+        pttBtn.style.background = "#15378a";
+      } else if (lastLine.role === 'me') {
+        pttBtn.classList.remove('ai');
+        pttBtn.classList.add('user');
+        pttBtnLabel.textContent = "You are talking";
+        pttBtn.style.background = "#60a5fa";
+      }
+    }
+
     function renderTranscript() {
       if (!transcript.length) {
         answerEl.innerHTML = '<div class="muted">No conversation yet.</div>';
+        updateButtonState();
         return;
       }
       answerEl.innerHTML = '';
@@ -192,6 +215,7 @@
         answerEl.appendChild(div);
       });
       answerEl.scrollTop = answerEl.scrollHeight;
+      updateButtonState();
     }
     function appendLine(role, text) {
       if (!text || text === "(Listening...)" || text === "(Stopped)") return;
@@ -199,33 +223,13 @@
       renderTranscript();
     }
 
-    function setIdle() {
-      pttBtn.classList.remove('ai','user');
-      pttBtn.classList.add('user');
-      pttBtnLabel.textContent = "Start Talking";
-      pttBtn.style.background = "#60a5fa";
-      pttBtn.disabled = false;
-    }
-    function setUserTalking() {
-      pttBtn.classList.remove('ai');
-      pttBtn.classList.add('user');
-      pttBtnLabel.textContent = "You are talking";
-      pttBtn.style.background = "#60a5fa";
-      pttBtn.disabled = false;
-    }
-    function setAITalking() {
-      pttBtn.classList.remove('user');
-      pttBtn.classList.add('ai');
-      pttBtnLabel.textContent = "AI is talking";
-      pttBtn.style.background = "#15378a";
-      pttBtn.disabled = false;
-    }
     function closeSession() {
       sessionActive = false;
       talking = false;
       if (micTrack) try { micTrack.enabled = false; } catch {}
       if (pc) try { pc.close(); } catch {}
-      setIdle();
+      transcript = [];
+      renderTranscript();
     }
 
     async function initRealtime() {
@@ -250,7 +254,6 @@
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
-              setAITalking();
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -274,7 +277,7 @@
         const answer = { type:"answer", sdp: await r.text() };
         await pc.setRemoteDescription(answer);
 
-        setIdle();
+        renderTranscript();
         sessionActive = true;
 
         pttBtn.onclick = () => {
@@ -282,21 +285,26 @@
           if (talking) {
             talking = false;
             if (micTrack) micTrack.enabled = false;
-            setIdle();
-            if (rtAudio) rtAudio.pause();
           } else {
             talking = true;
             if (micTrack) micTrack.enabled = true;
-            setUserTalking();
+            appendLine("me", "(Listening...)");
           }
         };
 
-        rtAudio.addEventListener("playing", ()=> setAITalking());
-        rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; });
-        rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; });
+        rtAudio.addEventListener("playing", ()=> {
+          // Optionally, you could append a line here for "ai" but that's handled by transcript.
+        });
+        rtAudio.addEventListener("ended", ()=> {
+          // Optionally, you could append a line here for "ai" ended.
+        });
+        rtAudio.addEventListener("pause", ()=> {
+          // Optionally, you could append a line here for "ai" paused.
+        });
 
       } catch(err) {
-        setIdle();
+        transcript = [];
+        renderTranscript();
         sessionActive = false;
         answerEl.innerHTML = '<div class="muted">Session error. Please reload the page.</div>';
       }
