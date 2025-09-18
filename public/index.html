@@ -66,9 +66,9 @@
       to { filter: hue-rotate(180deg);}
     }
     #pttBtn.speaking {
-      background: conic-gradient(from 120deg, #f59e42 0%, #60a5fa 40%, #f59e42 100%);
+      background: conic-gradient(from 120deg, #065f46 0%, #60a5fa 40%, #065f46 100%);
       animation: swirlSpeak 1.2s linear infinite;
-      border: 3px solid #f59e42;
+      border: 3px solid #065f46;
     }
     @keyframes swirlSpeak {
       to { filter: hue-rotate(360deg);}
@@ -103,24 +103,24 @@
       right: 12px;
       bottom: 12px;
       color: #ffffff;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       border-radius: 9px;
-      padding: 5px 20px;
+      padding: 5px 18px;
       z-index: 100;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.2px;
       font-family: inherit;
-      opacity: 0.85;
+      opacity: 0.8;
       border: none;
       background: none;
       text-shadow: 0 1px 7px #0003;
       pointer-events: none;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
     #poweredBy .tm {
-      font-size: 19px;
+      font-size: 18px;
       opacity: 0.9;
       vertical-align: super;
       position: relative;
@@ -129,13 +129,6 @@
       font-weight: 900;
       text-shadow: 0px 0px 7px #15378a66;
       margin-left:2px;
-    }
-    #poweredBy .year {
-      font-size: 14px;
-      color: #e0e0e0;
-      margin-left:6px;
-      font-weight: 600;
-      letter-spacing: 1px;
     }
     .emailForm {
       margin-top: 10px;
@@ -158,13 +151,13 @@
       font-size: 14px;
       border-radius: 7px;
       border: none;
-      background: linear-gradient(90deg, #3b82f6 0%, #1e40af 100%);
+      background: linear-gradient(90deg, #3b82f6 0%, #065f46 100%);
       color: #fff;
       font-weight: 600;
       cursor:pointer;
       transition: background 0.3s;
     }
-    .emailForm button:active { background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);}
+    .emailForm button:active { background: linear-gradient(90deg, #2563eb 0%, #065f46 100%);}
     .emailSuccess {
       color: #22c55e;
       font-size: 14px;
@@ -206,7 +199,7 @@
     <div id="emailMsg"></div>
   </div>
   <div id="poweredBy">
-    Powered by VoxTalk<span class="tm">™</span> <span class="year">2025</span>
+    Powered by VoxTalk<span class="tm">™</span> <span>(Demo)</span>
   </div>
   <script>
     const pttBtn   = document.getElementById('pttBtn');
@@ -218,7 +211,7 @@
     const emailMsg = document.getElementById('emailMsg');
 
     let transcript = ""; // All chat text for transcript
-    let micTrack, pc, talking = false;
+    let micTrack, pc, talking = false, sessionActive = false;
 
     function appendLine(role, text) {
       // Only show actual conversation, not (Listening...) or (Stopped)
@@ -296,18 +289,23 @@
         await pc.setRemoteDescription(answer);
 
         setIdle();
+        sessionActive = true;
 
         pttBtn.onclick = () => {
+          if (!sessionActive) {
+            initRealtime();
+            return;
+          }
           if (talking) {
             // Stop listening immediately
             talking = false;
-            micTrack.enabled = false;
+            if (micTrack) micTrack.enabled = false;
             setIdle();
-            rtAudio.pause();
+            if (rtAudio) rtAudio.pause();
           } else {
             // Start listening
             talking = true;
-            micTrack.enabled = true;
+            if (micTrack) micTrack.enabled = true;
             setListening();
           }
         };
@@ -318,6 +316,7 @@
 
       } catch(err) {
         setIdle();
+        sessionActive = false;
         console.error("Realtime init failed", err);
       }
     }
@@ -333,12 +332,11 @@
         emailMsg.className = "emailError";
         return;
       }
-      // POST to /send-transcript on your server (you'll need to implement this)
       try {
         const resp = await fetch("/send-transcript", {
           method: "POST",
           headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ email, transcript })
+          body: JSON.stringify({ email, transcript, sender: "msimpson215@gmail.com" })
         });
         const result = await resp.json();
         if (resp.ok) {
