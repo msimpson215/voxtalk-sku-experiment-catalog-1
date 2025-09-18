@@ -241,13 +241,13 @@
     function setListening() {
       pttBtn.classList.remove('idle','speaking');
       pttBtn.classList.add('listening');
-      pttBtnLabel.textContent = "Listening...";
+      pttBtnLabel.textContent = "Listening... (click to stop)";
       pttBtn.disabled = false;
     }
     function setSpeaking() {
       pttBtn.classList.remove('idle','listening');
       pttBtn.classList.add('speaking');
-      pttBtnLabel.textContent = "Speaking...";
+      pttBtnLabel.textContent = "Speaking... (click to stop)";
       pttBtn.disabled = false;
     }
 
@@ -299,10 +299,11 @@
 
         pttBtn.onclick = () => {
           if (talking) {
-            // Stop listening
+            // Stop listening immediately
             talking = false;
             micTrack.enabled = false;
             setIdle();
+            rtAudio.pause();
           } else {
             // Start listening
             talking = true;
