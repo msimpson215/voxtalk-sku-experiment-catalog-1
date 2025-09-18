@@ -1,36 +1,26 @@
-import express from "express";
-
+const express = require('express');
+const path = require('path');
 const app = express();
-app.use(express.static("public")); // serve index.html + script
+const PORT = process.env.PORT || 3000;
 
-// OpenAI realtime session endpoint
-app.post("/session", async (req, res) => {
-  try {
-    const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-realtime-preview",
-        voice: "alloy",
-        instructions:
-          "You are VoxTalk. Always greet in English, never default to Spanish. Translate user speech if needed, but always reply in English."
-      })
-    });
+// Serve static files from 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-    const data = await r.json();
-    res.json({
-      client_secret: data.client_secret,
-      model: "gpt-4o-realtime-preview",
-      voice: "alloy"
-    });
-  } catch (e) {
-    console.error("Session error:", e);
-    res.status(500).json({ error: "session failed" });
-  }
+// Example session endpoint (replace with your actual OpenAI realtime logic)
+app.post('/session', express.json(), (req, res) => {
+  // Dummy values – replace with your OpenAI credentials/config
+  res.json({
+    client_secret: { value: "YOUR_OPENAI_CLIENT_SECRET" },
+    model: "tts-1",
+    voice: "alloy"
+  });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("✅ Server running at http://localhost:" + PORT));
+// Fallback: serve index.html for any other route (for SPA support)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`VoxTalk server running on http://localhost:${PORT}`);
+});
