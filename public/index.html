@@ -27,6 +27,51 @@
   <button id="stopButton">STOP</button>
   <div id="status"></div>
   <audio id="audioPlayer" controls style="display:none;"></audio>
-  <script src="main.js"></script>
+  <script>
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const statusDiv = document.getElementById('status');
+
+    let currentAudioFetchController = null;
+
+    startButton.onclick = async () => {
+      statusDiv.innerText = 'Starting session...';
+      stopButton.style.display = 'none';
+
+      // Start session and get greeting (simulate: you may need to fetch TTS audio here)
+      const response = await fetch('/session', { method: 'POST' });
+      const session = await response.json();
+
+      // Simulate TTS audio fetch (replace with actual API/audio)
+      // For demo: use a short mp3, or replace with your TTS fetch logic
+      // We'll use a placeholder audio for demonstration purposes:
+      const audioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
+      audioPlayer.src = audioUrl;
+      audioPlayer.play();
+      stopButton.style.display = 'inline-block';
+      statusDiv.innerText = 'VoxTalk is speaking.';
+
+      // If you stream audio via fetch: save controller so you can abort on STOP
+      // Example:
+      // currentAudioFetchController = new AbortController();
+      // fetch('your_audio_stream_url', { signal: currentAudioFetchController.signal });
+    };
+
+    stopButton.onclick = () => {
+      // Immediate stop: pause and reset audio
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      stopButton.style.display = 'none';
+      statusDiv.innerText = 'Speech stopped.';
+
+      // If streaming via fetch, abort request
+      if (currentAudioFetchController) {
+        currentAudioFetchController.abort();
+        currentAudioFetchController = null;
+      }
+    };
+  </script>
 </body>
 </html>
