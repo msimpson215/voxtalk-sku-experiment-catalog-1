@@ -1,5 +1,4 @@
 import express from "express";
-import fetch from "node-fetch"; // If you use Node v18+, global fetch is available. Otherwise, use node-fetch.
 
 const app = express();
 app.use(express.static("public"));
