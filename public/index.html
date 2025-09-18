@@ -62,12 +62,12 @@
       border: 3px solid #60a5fa;
     }
     #statusBig.ai {
-      background: #15378a;
+      background: #15378a; /* dark blue */
       color: #fff;
       border-color: #15378a;
     }
     #statusBig.user {
-      background: #60a5fa;
+      background: #60a5fa; /* light blue */
       color: #fff;
       border-color: #2563eb;
     }
@@ -180,6 +180,7 @@
   <div id="poweredBy">
     Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
   </div>
+
   <script>
     const statusBig = document.getElementById('statusBig');
     const pttBtn = document.getElementById('pttBtn');
@@ -189,15 +190,36 @@
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
     let aiSpeaking = false;
+    let dc;
 
-    function setStatus(type) {
-      statusBig.className = type;
-      if (type === "user") {
-        statusBig.textContent = "YOUR TURN TO TALK";
-      } else if (type === "ai") {
-        statusBig.textContent = "AI IS TALKING";
+    // ---------------------------
+    // Centralized status manager
+    // ---------------------------
+    function setStatus(state) {
+      statusBig.className = state;
+      if (state === "user") statusBig.textContent = "YOUR TURN TO TALK";
+      else if (state === "ai") statusBig.textContent = "AI IS TALKING";
+      else statusBig.textContent = "WAIT";
+      console.log("STATUS:", state);
+    }
+
+    function handleASR(active) {
+      talking = active;
+      if (micTrack) micTrack.enabled = active;
+      if (active) {
+        setStatus("user");
+        appendLine("me", "(Listening...)");
       } else {
-        statusBig.textContent = "WAIT";
+        setStatus("wait");
+      }
+    }
+
+    function handleAI(active) {
+      aiSpeaking = active;
+      if (active) {
+        setStatus("ai");
+      } else {
+        setStatus(talking ? "user" : "wait");
       }
     }
 
@@ -249,13 +271,12 @@
           rtAudio.play().catch(()=>{});
         };
 
-        const dc = pc.createDataChannel("events");
+        dc = pc.createDataChannel("events");
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
-              setStatus("ai");
-              aiSpeaking = true;
+              handleAI(true); // ensure dark blue while AI is streaming
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -282,33 +303,16 @@
         setStatus("wait");
         sessionActive = true;
 
+        // Button to toggle ASR state
         pttBtn.onclick = () => {
-          if (!sessionActive) { return; }
-          if (talking) {
-            talking = false;
-            if (micTrack) micTrack.enabled = false;
-            setStatus("wait");
-            if (rtAudio) rtAudio.pause();
-          } else {
-            talking = true;
-            if (micTrack) micTrack.enabled = true;
-            setStatus("user");
-            appendLine("me", "(Listening...)");
-          }
+          if (!sessionActive) return;
+          handleASR(!talking);
         };
 
-        rtAudio.addEventListener("playing", ()=> {
-          setStatus("ai");
-          aiSpeaking = true;
-        });
-        rtAudio.addEventListener("ended", ()=> {
-          aiSpeaking = false;
-          setStatus(talking ? "user" : "wait");
-        });
-        rtAudio.addEventListener("pause", ()=> {
-          aiSpeaking = false;
-          setStatus(talking ? "user" : "wait");
-        });
+        // AI audio events
+        rtAudio.addEventListener("playing", ()=> handleAI(true));
+        rtAudio.addEventListener("ended",  ()=> handleAI(false));
+        rtAudio.addEventListener("pause",  ()=> handleAI(false));
 
       } catch(err) {
         setStatus("wait");
@@ -316,6 +320,7 @@
         answerEl.innerHTML = '<div class="muted">Session error. Please reload the page.</div>';
       }
     }
+
     initRealtime();
   </script>
 </body>
