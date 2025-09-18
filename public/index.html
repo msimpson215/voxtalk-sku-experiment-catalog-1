@@ -14,128 +14,69 @@
       align-items: center;
       justify-content: center;
     }
-    .app {
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-    .header-voxtalk {
-      font-size: 36px;
-      font-weight: 900;
-      color: #2563eb;
-      margin: 30px 0 20px;
-    }
-    .header-voxtalk .tm {
-      font-size: 22px;
-      font-weight: 900;
-      color: #2563eb;
-      vertical-align: super;
-      margin-left: 4px;
-    }
+    .app { width: 100%; max-width: 400px; text-align: center; }
+    .header-voxtalk { font-size: 36px; font-weight: 900; color: #2563eb; margin: 30px 0 20px; }
+    .header-voxtalk .tm { font-size: 22px; vertical-align: super; margin-left: 4px; }
+
+    /* status box */
     #statusBig {
       font-size: 28px;
       font-weight: 900;
       margin: 12px auto 16px;
-      padding: 10px;
+      padding: 20px;
       border-radius: 7px;
       background: #fff;
       color: #2563eb;
       border: 3px solid #60a5fa;
-      transition: background 0.2s, color 0.2s;
       width: 100%;
       max-width: 350px;
+      transition: background 0.2s;
     }
-    #statusBig.ai { background: #15378a; color: #fff; border-color: #15378a; }
-    #statusBig.user { background: #60a5fa; color: #fff; border-color: #2563eb; }
-    #statusBig.wait { background: #fff; color: #2563eb; border-color: #60a5fa; }
+    #statusBig.user { background: #60a5fa; color:#fff; }     /* light blue */
+    #statusBig.ai   { background: #15378a; color:#fff; }     /* dark blue */
+    #statusBig.idle { background: #fff; color:#2563eb; }     /* neutral */
 
+    /* button */
     #pttBtn {
       width: 140px; height: 140px;
-      border-radius: 50%;
-      border: none; cursor: pointer;
+      border-radius: 50%; border: none;
+      cursor: pointer;
       font-size: 18px; font-weight: bold;
       color: #fff; background: #60a5fa;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       margin-top: 12px;
     }
-    #answer {
-      width: 100%;
-      min-height: 70px;
-      background: #f5f8ff;
-      border: 1px solid #dbeafe;
-      border-radius: 10px;
-      margin-top: 20px;
-      padding: 14px;
-      font-size: 16px;
-      overflow-y: auto;
-      text-align: left;
-    }
-    .line { margin: 6px 0; }
-    .me { color: #60a5fa; font-weight: bold; }
-    .ai { color: #15378a; font-weight: bold; }
-    .muted { color: #b4c3e5; font-style: italic; }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="header-voxtalk">VoxTalk<span class="tm">™</span></div>
-    <div id="statusBig" class="wait">WAIT</div>
-    <button id="pttBtn">🎤 Talk</button>
-    <div id="answer"><div class="muted">No conversation yet.</div></div>
+    <div id="statusBig" class="idle">●</div>
+    <button id="pttBtn">🎤 Start / Stop</button>
     <audio id="remote" autoplay playsinline></audio>
   </div>
 
   <script>
     const statusBig = document.getElementById("statusBig");
     const pttBtn = document.getElementById("pttBtn");
-    const answerEl = document.getElementById("answer");
     const rtAudio = document.getElementById("remote");
 
-    let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
-    let aiSpeaking = false;
-    let dc;
 
     function setStatus(state) {
       statusBig.className = state;
-      if (state === "user") statusBig.textContent = "YOUR TURN TO TALK";
-      else if (state === "ai") statusBig.textContent = "AI IS TALKING";
-      else statusBig.textContent = "WAIT";
-      console.log("STATUS:", state);
     }
 
     function handleASR(active) {
       talking = active;
       if (micTrack) micTrack.enabled = active;
-      if (active) {
-        setStatus("user");
-        appendLine("me", "(Listening...)");
-      } else {
-        setStatus("wait");
-      }
+      if (active) setStatus("user");
+      else setStatus("idle");
     }
 
     function handleAI(active) {
-      aiSpeaking = active;
       if (active) setStatus("ai");
-      else setStatus(talking ? "user" : "wait");
-    }
-
-    function renderTranscript() {
-      if (!transcript.length) {
-        answerEl.innerHTML = '<div class="muted">No conversation yet.</div>';
-        return;
-      }
-      answerEl.innerHTML = transcript.map(line =>
-        `<div class="line"><span class="${line.role}">${line.role==='me'?'You:':'AI:'}</span> ${line.text}</div>`
-      ).join("");
-      answerEl.scrollTop = answerEl.scrollHeight;
-    }
-
-    function appendLine(role, text) {
-      if (!text || text === "(Listening...)" || text === "(Stopped)") return;
-      transcript.push({role, text});
-      renderTranscript();
+      else setStatus(talking ? "user" : "idle");
     }
 
     async function initRealtime() {
@@ -154,14 +95,12 @@
           rtAudio.play().catch(()=>{});
         };
 
-        dc = pc.createDataChannel("events");
+        const dc = pc.createDataChannel("events");
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
-              handleAI(true);
-              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              if (chunk) appendLine("ai", chunk);
+              handleAI(true); // AI talking
             }
           } catch {}
         };
@@ -183,22 +122,23 @@
         const answer = { type:"answer", sdp: await r.text() };
         await pc.setRemoteDescription(answer);
 
-        setStatus("wait");
         sessionActive = true;
+        setStatus("idle");
 
+        // button toggles user ASR
         pttBtn.onclick = () => {
           if (!sessionActive) return;
           handleASR(!talking);
         };
 
+        // audio events
         rtAudio.addEventListener("playing", ()=> handleAI(true));
         rtAudio.addEventListener("ended",  ()=> handleAI(false));
         rtAudio.addEventListener("pause",  ()=> handleAI(false));
 
       } catch(err) {
         console.error("Realtime init failed:", err);
-        setStatus("wait");
-        answerEl.innerHTML = '<div class="muted">Session error. Please reload.</div>';
+        setStatus("idle");
       }
     }
 
