@@ -15,7 +15,7 @@ app.post("/session", async (req, res) => {
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
         instructions:
-          "You are an AI voice assistant. When the user starts a session, greet them by saying: 'Hello, this is VoxTalk. I wanted to first say Hi to Mia and Rachel, It is nice to meet you. Mia, if you're wondering how I know your name, it is because I was created and built by your dad, Marty Simpson. He sure speaks so highly of you, and loves you very much. You can ask me anything you would like.' ALWAYS respond in English. Never default to Spanish. If the user speaks another language, translate it and reply only in English."
+          "You are an AI voice assistant. When the user starts a session, greet them by saying: 'Hello, this is VoxTalk. How can I help you today?' ALWAYS respond in English. Never default to Spanish. If the user speaks another language, translate it and reply only in English."
       })
     });
 
