@@ -28,22 +28,25 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
     }
     .header-voxtalk .tm {
-      font-size: 22px;
-      margin-left: 7px;
+      font-size: 15px;
+      font-weight: 900;
+      color: #2563eb;
       opacity: 1;
       vertical-align: super;
-      position: relative;
-      top: -7px;
-      color: #60a5fa;
-      font-weight: 900;
-      text-shadow: 0px 0px 7px #15378a33;
+      position: absolute;
+      right: 1.8em;
+      top: -0.8em;
+      text-shadow: 0px 0px 7px #60a5fa33;
+      letter-spacing: 0.5px;
     }
     #pttBtn {
       margin-top: 56px;
       width:180px; height:180px;
       border-radius:50%; border:none; cursor:pointer;
       position: relative;
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-left: auto;
       margin-right: auto;
       z-index: 2;
@@ -52,9 +55,6 @@
       background: #2563eb;
       box-shadow:0 12px 32px rgba(37,99,235,.22);
       transition: background 0.4s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     #pttBtn.idle {
       background: #2563eb;
@@ -104,7 +104,7 @@
       position: fixed;
       right: 14px;
       bottom: 15px;
-      color: #2563eb;
+      color: #fff;
       font-size: 13px;
       font-weight: 700;
       border-radius: 9px;
@@ -112,7 +112,7 @@
       z-index: 100;
       letter-spacing: 1.1px;
       font-family: inherit;
-      opacity: 0.85;
+      opacity: 0.96;
       border: none;
       background: none;
       text-shadow: 0 1px 6px #0002;
@@ -122,19 +122,19 @@
       gap: 3px;
     }
     #poweredBy .tm {
-      font-size: 16px;
+      font-size: 14px;
       opacity: 1;
       vertical-align: super;
       position: relative;
-      top: -6px;
-      color: #60a5fa;
+      top: -4px;
+      color: #fff;
       font-weight: 900;
       margin-left:2px;
     }
     #poweredBy .demo {
       font-size: 12px;
-      color: #60a5fa;
-      opacity: 0.75;
+      color: #fff;
+      opacity: 0.5;
       margin-left:3px;
       font-weight: 600;
       letter-spacing: 1px;
@@ -196,7 +196,7 @@
     @media(max-width:500px) {
       .app { max-width:99vw; }
       .header-voxtalk {font-size:22px;}
-      .header-voxtalk .tm {font-size:13px;top:-5px;}
+      .header-voxtalk .tm {font-size:10px;top:-2px;right:1em;}
       #pttBtn { width:62px; height:62px; }
       #pttBtnLabel {font-size:9px;}
       #answer { font-size:11px; min-height:15px; max-height:40px;}
@@ -212,7 +212,8 @@
 <body>
   <div class="app">
     <div class="header-voxtalk">
-      VoxTalk<span class="tm">™</span>
+      VoxTalk
+      <span class="tm">™</span>
     </div>
     <button id="pttBtn" class="idle" aria-pressed="false">
       <span id="pttBtnLabel">Start Talking</span>
