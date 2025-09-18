@@ -61,16 +61,16 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      transition: background 0.2s;
       box-shadow: 0 8px 30px rgba(37,99,235,.16);
       user-select: none;
-      background: #60a5fa; /* Idle/light blue */
+      background: #60a5fa; /* Light blue by default */
+      transition: background 0.2s;
     }
-    #pttBtn.ai-speaking {
-      background: #15378a !important; /* AI speaking: dark blue */
+    #pttBtn.speaking-ai {
+      background: #15378a !important;
     }
-    #pttBtn.user-speaking {
-      background: #60a5fa !important; /* User speaking: light blue */
+    #pttBtn.speaking-user {
+      background: #60a5fa !important;
     }
     #pttBtnLabel {
       font-size: 17px;
@@ -168,10 +168,10 @@
     Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
   </div>
   <script>
-    const pttBtn   = document.getElementById('pttBtn');
+    const pttBtn = document.getElementById('pttBtn');
     const pttBtnLabel = document.getElementById('pttBtnLabel');
     const answerEl = document.getElementById('answer');
-    const rtAudio  = document.getElementById('remote');
+    const rtAudio = document.getElementById('remote');
 
     let transcript = [];
     let micTrack, pc, talking = false, sessionActive = false;
@@ -198,24 +198,21 @@
     }
 
     function setIdle() {
-      pttBtn.classList.remove('ai-speaking', 'user-speaking');
-      pttBtn.classList.add('user-speaking');
+      pttBtn.classList.remove('speaking-ai', 'speaking-user');
+      pttBtn.classList.add('speaking-user');
       pttBtnLabel.textContent = "Start Talking";
-      pttBtn.style.background = "#60a5fa";
       pttBtn.disabled = false;
     }
     function setUserTalking() {
-      pttBtn.classList.remove('ai-speaking');
-      pttBtn.classList.add('user-speaking');
+      pttBtn.classList.remove('speaking-ai');
+      pttBtn.classList.add('speaking-user');
       pttBtnLabel.textContent = "Listening";
-      pttBtn.style.background = "#60a5fa";
       pttBtn.disabled = false;
     }
     function setAITalking() {
-      pttBtn.classList.remove('user-speaking');
-      pttBtn.classList.add('ai-speaking');
+      pttBtn.classList.remove('speaking-user');
+      pttBtn.classList.add('speaking-ai');
       pttBtnLabel.textContent = "Speaking";
-      pttBtn.style.background = "#15378a";
       pttBtn.disabled = false;
     }
     function closeSession() {
