@@ -60,7 +60,7 @@
             }
 
             if (evt.type === "response.audio.delta") {
-              // 🔑 Pulse only when AI audio arrives
+              // 🔑 pulse halo only when AI audio arrives
               setSpeaking(true);
               clearTimeout(window._speakTimer);
               window._speakTimer = setTimeout(()=> setSpeaking(false), 500);
