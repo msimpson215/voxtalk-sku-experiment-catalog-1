@@ -61,17 +61,31 @@
               if (chunk) appendLine("ai", chunk);
             }
 
-            // 🔑 VoxTalk speech hooks
+            // 🔹 Preferred: explicit audio start/end events
             if (evt.type === "response.audio.start") {
               console.log("AI started speaking");
-              setSpeaking(true); // halo ON
+              setSpeaking(true);   // halo ON
             }
             if (evt.type === "response.audio.end") {
               console.log("AI finished speaking");
-              setSpeaking(false); // halo OFF
+              setSpeaking(false);  // halo OFF
             }
           } catch {}
         };
+
+        // 🔹 Fallback: use audio element events
+        rtAudio.addEventListener("playing", ()=> {
+          console.log("Fallback: audio element playing");
+          setSpeaking(true);
+        });
+        rtAudio.addEventListener("pause", ()=> {
+          console.log("Fallback: audio element paused");
+          setSpeaking(false);
+        });
+        rtAudio.addEventListener("ended", ()=> {
+          console.log("Fallback: audio element ended");
+          setSpeaking(false);
+        });
 
         const offer = await pc.createOffer({ offerToReceiveAudio:true });
         await pc.setLocalDescription(offer);
