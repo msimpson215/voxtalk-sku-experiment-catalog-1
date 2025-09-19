@@ -19,7 +19,7 @@ h1 { margin:6px 0; font-size:22px; }
 #pttBtn:hover { transform: scale(1.02); }
 #pttBtn:active { transform: scale(0.95); }
 
-/* Speaking (AI talking) — halo animation */
+/* Speaking (AI talking) — blue halo pulse */
 #pttBtn.speaking::after {
   content:"";
   position:absolute;
