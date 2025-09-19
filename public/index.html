@@ -61,19 +61,17 @@
               if (chunk) appendLine("ai", chunk);
             }
 
-            if (evt.type === "response.audio.delta") {
-              // 🔑 Primary: pulse when audio chunks arrive
-              setSpeaking(true);
-              clearTimeout(window._speakTimer);
-              window._speakTimer = setTimeout(()=> setSpeaking(false), 500);
+            // 🔑 VoxTalk speech hooks
+            if (evt.type === "response.audio.start") {
+              console.log("AI started speaking");
+              setSpeaking(true); // halo ON
+            }
+            if (evt.type === "response.audio.end") {
+              console.log("AI finished speaking");
+              setSpeaking(false); // halo OFF
             }
           } catch {}
         };
-
-        // 🔑 Fallback: use audio element events
-        rtAudio.addEventListener("playing", ()=> setSpeaking(true));
-        rtAudio.addEventListener("pause",   ()=> setSpeaking(false));
-        rtAudio.addEventListener("ended",   ()=> setSpeaking(false));
 
         const offer = await pc.createOffer({ offerToReceiveAudio:true });
         await pc.setLocalDescription(offer);
