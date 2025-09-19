@@ -19,13 +19,13 @@ h1 { margin:6px 0; font-size:22px; }
 #pttBtn:hover { transform: scale(1.02); }
 #pttBtn:active { transform: scale(0.95); }
 
-/* Speaking (AI talking) — blue halo pulse */
+/* Halo only while speaking */
 #pttBtn.speaking::after {
   content:"";
   position:absolute;
-  inset:-15px; /* ring outside button */
+  inset:-15px;
   border-radius:50%;
-  border:4px solid rgba(59,130,246,0.6); /* blue halo */
+  border:4px solid rgba(59,130,246,0.6);
   animation: pulseRing 1.6s ease-in-out infinite;
 }
 
