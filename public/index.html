@@ -32,7 +32,7 @@
     }
 
     function setListening(on) { pttBtn.classList.toggle('listening', on); }
-    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
+    function setSpeaking(on)  { pttBtn.classList.toggle('speaking', on); }
 
     async function initRealtime() {
       try {
@@ -82,27 +82,41 @@
         pttBtn.onclick = () => {
           talking = !talking;
           micTrack.enabled = talking;
-          setListening(talking);
+
           if (talking) {
-            appendLine("me","(Listening...)");
+            setListening(true);
+            setSpeaking(false);
+            appendLine("me", "(Listening...)");
           } else {
-            setListening(false); setSpeaking(false);
-            appendLine("me","(Stopped)");
+            setListening(false);
+            setSpeaking(false);
+            appendLine("me", "(Stopped)");
           }
         };
 
-        rtAudio.addEventListener("playing", ()=> setSpeaking(true));
-        rtAudio.addEventListener("ended",   ()=> { setSpeaking(false); setListening(false); talking=false; });
-        rtAudio.addEventListener("pause",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+        // AI audio events
+        rtAudio.addEventListener("playing", () => {
+          setSpeaking(true);
+          setListening(false); // stop blue when AI talks
+        });
+
+        rtAudio.addEventListener("ended", () => {
+          setSpeaking(false);
+          setListening(false);
+          talking = false;
+        });
+
+        rtAudio.addEventListener("pause", () => {
+          setSpeaking(false);
+          setListening(false);
+          talking = false;
+        });
 
       } catch(err) {
         console.error("Realtime init failed", err);
       }
     }
     initRealtime();
-
-    // Custom greeting
-    appendLine("ai", "Hello, this is VoxTalk. I was created by your dad, Marty Simpson.<br><br>Hello Mia and Rachel, nice to meet you!<br><br>You can ask me anything you would like.");
   </script>
 </body>
 </html>
