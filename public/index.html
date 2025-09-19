@@ -2,227 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk™</title>
+  <title>VoxTalk</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <style>
     body {
-      margin:0;
-      font-family:system-ui,sans-serif;
-      background: radial-gradient(circle at 50% 20%, #dbeafe, #60a5fa 40%, #2563eb 90%);
-      min-height:100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin:0; font-family:system-ui,sans-serif;
+      display:grid; place-items:center; min-height:100vh;
+      background: radial-gradient(circle at 50% 20%, #dbeafe, #93c5fd 40%, #1e3a8a 90%);
     }
-    .app {
-      width: 100%;
-      max-width: 400px;
-      margin: auto;
-      text-align: center;
-      padding: 0 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .header-voxtalk {
-      font-size: 36px;
-      font-weight: 900;
-      color: #2563eb;
-      position: relative;
-      letter-spacing: 2px;
-      margin-bottom: 28px;
-      margin-top: 36px;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      display: inline-block;
-    }
-    .header-voxtalk .tm {
-      font-size: 22px;
-      font-weight: 900;
-      color: #2563eb;
-      position: absolute;
-      top: -13px;
-      right: -23px;
-      letter-spacing: 0.5px;
-      vertical-align: super;
-    }
+    .app { text-align:center; max-width:600px; }
+    h1 { margin:6px 0; font-size:22px; }
+
+    /* button base */
     #pttBtn {
-      width: 170px;
-      height: 170px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      outline: none;
-      margin: 20px 0 0 0;
-      font-size: 17px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width:120px; height:120px;
+      border-radius:50%; border:none; cursor:pointer;
+      background:#e5e7eb;
+      box-shadow:0 6px 18px rgba(0,0,0,.2);
+      transition: background 0.2s, transform 0.15s ease, box-shadow 0.3s ease;
       position: relative;
-      box-shadow: 0 8px 30px rgba(37,99,235,.16);
-      user-select: none;
-      background: #60a5fa;
-      transition: background 0.2s;
     }
-    #pttBtnLabel {
-      font-size: 17px;
-      font-weight: 700;
-      color: #fff;
-      text-align: center;
-      pointer-events: none;
-      user-select:none;
-    }
+    #pttBtn:hover { transform: scale(1.02); }
+    #pttBtn:active { transform: scale(0.95); }
+
+    /* states */
+    #pttBtn.idle   { background:#f3f4f6; }         /* neutral gray */
+    #pttBtn.user   { background:#60a5fa; }         /* light blue (user talking) */
+    #pttBtn.ai     { background:#1e3a8a; color:#fff;} /* dark blue (AI talking) */
+
     #answer {
-      width: 100%;
-      min-height: 70px;
-      max-height: 220px;
-      background: #f5f8ff;
-      border: 1px solid #dbeafe;
-      border-radius: 10px;
-      margin-top: 20px;
-      padding: 14px 14px;
-      font-size: 17px;
-      overflow-y: auto;
-      text-align: left;
-      box-sizing: border-box;
-      color: #222;
-      font-family: inherit;
-      white-space: pre-line;
+      margin-top:20px; padding:12px; border:1px solid #ccc;
+      border-radius:8px; background:white;
+      min-height:80px; text-align:left; font-size:14px;
     }
-    .line { margin: 7px 0; }
-    .me { color: #60a5fa; font-weight: 700; }
-    .ai { color: #15378a; font-weight: 700; }
-    .muted { color: #b4c3e5; font-style: italic; font-size: 16px;}
-    #poweredBy {
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      color: #fff;
-      background: none;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      opacity: 0.95;
-      font-family: inherit;
-      text-shadow: 0 1px 8px #2563eb55;
-      pointer-events: none;
-      border-radius: 7px;
-      padding: 4px 13px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      z-index: 100;
-      border: none;
-    }
-    #poweredBy .tm {
-      font-size: 14px;
-      font-weight: 900;
-      color: #fff;
-      margin-left: 2px;
-      vertical-align: super;
-      position: relative;
-      top: -4px;
-      opacity: 0.8;
-    }
-    #poweredBy .demo {
-      font-size: 12px;
-      color: #fff;
-      opacity: 0.5;
-      margin-left: 3px;
-      font-weight: 600;
-      letter-spacing: 1px;
-    }
-    @media (max-width: 480px) {
-      .app { max-width: 98vw; }
-      .header-voxtalk { font-size: 25px; }
-      .header-voxtalk .tm { font-size: 13px; top: -6px; right: -10px;}
-      #pttBtn { width: 90px; height: 90px; font-size: 12px; }
-      #answer { font-size: 13px; min-height: 30px; max-height: 120px;}
-      #poweredBy { font-size: 9px; padding: 2px 8px;}
-      #poweredBy .tm { font-size: 8px; top: -2px;}
-      #poweredBy .demo { font-size: 8px;}
-    }
+    .line { margin:6px 0; }
+    .me { color:#2563eb; font-weight:600; }
+    .ai { color:#065f46; font-weight:600; }
+    .text { color:#111; }
+    .muted { color:#777; font-style:italic; }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="header-voxtalk">
-      VoxTalk
-      <span class="tm">™</span>
-    </div>
-    <button id="pttBtn" aria-pressed="false">
-      <span id="pttBtnLabel">Start Talking</span>
-    </button>
-    <div id="answer"><div class="muted">No conversation yet.</div></div>
+    <h1>Talk to VoxTalk</h1>
+    <button id="pttBtn" class="idle"></button>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
   </div>
-  <div id="poweredBy">
-    Powered by VoxTalk<span class="tm">™</span><span class="demo">(Demo)</span>
-  </div>
+
   <script>
-    const pttBtn = document.getElementById('pttBtn');
-    const pttBtnLabel = document.getElementById('pttBtnLabel');
+    const pttBtn   = document.getElementById('pttBtn');
     const answerEl = document.getElementById('answer');
-    const rtAudio = document.getElementById('remote');
+    const rtAudio  = document.getElementById('remote');
 
-    let transcript = [];
-    let micTrack, pc, talking = false, sessionActive = false;
-
-    function renderTranscript() {
-      if (!transcript.length) {
-        answerEl.innerHTML = '<div class="muted">No conversation yet.</div>';
-        return;
-      }
-      answerEl.innerHTML = '';
-      transcript.forEach(line => {
-        const div = document.createElement('div');
-        div.className = 'line';
-        div.innerHTML = `<span class="${line.role}">${line.role==='me'?'You:':'AI:'}</span>
-                         <span class="text">${line.text}</span>`;
-        answerEl.appendChild(div);
-      });
+    function appendLine(role, text) {
+      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
+                       <span class="text">${text}</span>`;
+      answerEl.appendChild(div);
       answerEl.scrollTop = answerEl.scrollHeight;
     }
-    function appendLine(role, text) {
-      if (!text || text === "(Listening...)" || text === "(Stopped)") return;
-      transcript.push({role, text});
-      renderTranscript();
-    }
 
-    function setIdle() {
-      pttBtnLabel.textContent = "Start Talking";
-      pttBtn.style.background = "#60a5fa";
-      pttBtn.disabled = false;
-    }
-    function setUserTalking() {
-      pttBtnLabel.textContent = "Listening";
-      pttBtn.style.background = "#60a5fa";
-      pttBtn.disabled = false;
-    }
-    function setAITalking() {
-      pttBtnLabel.textContent = "Speaking";
-      pttBtn.style.background = "#15378a";
-      pttBtn.disabled = false;
-    }
-    function closeSession() {
-      sessionActive = false;
-      talking = false;
-      if (micTrack) try { micTrack.enabled = false; } catch {}
-      if (pc) try { pc.close(); } catch {}
-      setIdle();
+    function setStatus(state) {
+      pttBtn.className = state; // idle, user, ai
     }
 
     async function initRealtime() {
-      closeSession();
       try {
         const s = await fetch("/session", { method:"POST" });
         const { client_secret, model, voice } = await s.json();
 
-        pc = new RTCPeerConnection();
+        const pc = new RTCPeerConnection();
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
-        micTrack = mic.getTracks()[0];
+        const micTrack = mic.getTracks()[0];
         micTrack.enabled = false;
         pc.addTrack(micTrack, mic);
 
@@ -236,7 +91,6 @@
           try {
             const evt = JSON.parse(e.data);
             if (evt.type === "response.message.delta") {
-              setAITalking();
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
@@ -260,34 +114,29 @@
         const answer = { type:"answer", sdp: await r.text() };
         await pc.setRemoteDescription(answer);
 
-        setIdle();
-        sessionActive = true;
+        let talking = false;
 
+        // Button toggles mic (ASR)
         pttBtn.onclick = () => {
-          if (!sessionActive) { return; }
-          if (talking) {
-            talking = false;
-            if (micTrack) micTrack.enabled = false;
-            setIdle();
-            if (rtAudio) rtAudio.pause();
-          } else {
-            talking = true;
-            if (micTrack) micTrack.enabled = true;
-            setUserTalking();
-          }
+          talking = !talking;
+          micTrack.enabled = talking;
+          setStatus(talking ? "user" : "idle");
+          appendLine("me", talking ? "(Listening...)" : "(Stopped)");
         };
 
-        rtAudio.addEventListener("playing", ()=> setAITalking());
-        rtAudio.addEventListener("ended",   ()=> { setIdle(); talking=false; });
-        rtAudio.addEventListener("pause",   ()=> { setIdle(); talking=false; });
+        // AI speaking events
+        rtAudio.addEventListener("playing", ()=> setStatus("ai"));
+        rtAudio.addEventListener("ended",   ()=> setStatus(talking ? "user" : "idle"));
+        rtAudio.addEventListener("pause",   ()=> setStatus(talking ? "user" : "idle"));
 
       } catch(err) {
-        setIdle();
-        sessionActive = false;
-        answerEl.innerHTML = '<div class="muted">Session error. Please reload the page.</div>';
+        console.error("Realtime init failed", err);
       }
     }
     initRealtime();
+
+    // Demo greeting
+    appendLine("ai", "Hello, this is VoxTalk. How can I help you today?");
   </script>
 </body>
 </html>
