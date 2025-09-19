@@ -2,141 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:,">
+  <title>VoxTalk AI Status Test</title>
   <style>
     body {
-      margin:0; font-family:system-ui,sans-serif;
-      display:grid; place-items:center; min-height:100vh;
-      background: radial-gradient(circle at 50% 20%, #dbeafe, #93c5fd 40%, #1e3a8a 90%);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:100vh; background:#f9fafb; font-family:sans-serif;
     }
-    .app { text-align:center; max-width:600px; }
-    h1 { margin:6px 0; font-size:22px; }
-
-    /* button base */
     #pttBtn {
-      width:120px; height:120px;
-      border-radius:50%; border:none; cursor:pointer;
-      background:#e5e7eb;
-      box-shadow:0 6px 18px rgba(0,0,0,.2);
-      transition: background 0.2s, transform 0.15s ease, box-shadow 0.3s ease;
-      position: relative;
+      width:140px; height:140px;
+      border:none; border-radius:50%; cursor:pointer;
+      background:#d1d5db; /* gray idle */
+      font-size:16px; font-weight:bold; color:#fff;
+      transition: background 0.3s;
     }
-    #pttBtn:hover { transform: scale(1.02); }
-    #pttBtn:active { transform: scale(0.95); }
-
-    /* states */
-    #pttBtn.idle   { background:#f3f4f6; }         /* neutral gray */
-    #pttBtn.user   { background:#60a5fa; }         /* light blue (user talking) */
-    #pttBtn.ai     { background:#1e3a8a; color:#fff;} /* dark blue (AI talking) */
-
-    #answer {
-      margin-top:20px; padding:12px; border:1px solid #ccc;
-      border-radius:8px; background:white;
-      min-height:80px; text-align:left; font-size:14px;
-    }
-    .line { margin:6px 0; }
-    .me { color:#2563eb; font-weight:600; }
-    .ai { color:#065f46; font-weight:600; }
-    .text { color:#111; }
-    .muted { color:#777; font-style:italic; }
+    #pttBtn.ai { background:#1e3a8a; }  /* dark blue when AI speaking */
+    #pttBtn.idle { background:#9ca3af; } /* gray idle */
   </style>
 </head>
 <body>
-  <div class="app">
-    <h1>Talk to VoxTalk</h1>
-    <button id="pttBtn" class="idle"></button>
-    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
-    <audio id="remote" autoplay playsinline></audio>
-  </div>
+  <h1>VoxTalk Test</h1>
+  <button id="pttBtn" class="idle">Idle</button>
+  <audio id="remote" autoplay playsinline></audio>
 
   <script>
-    const pttBtn   = document.getElementById('pttBtn');
-    const answerEl = document.getElementById('answer');
-    const rtAudio  = document.getElementById('remote');
+    const pttBtn = document.getElementById("pttBtn");
+    const rtAudio = document.getElementById("remote");
 
-    function appendLine(role, text) {
-      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
-      const div = document.createElement('div');
-      div.className = 'line';
-      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
-                       <span class="text">${text}</span>`;
-      answerEl.appendChild(div);
-      answerEl.scrollTop = answerEl.scrollHeight;
-    }
-
-    function setStatus(state) {
-      pttBtn.className = state; // idle, user, ai
-    }
-
-    async function initRealtime() {
-      try {
-        const s = await fetch("/session", { method:"POST" });
-        const { client_secret, model, voice } = await s.json();
-
-        const pc = new RTCPeerConnection();
-        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
-        const micTrack = mic.getTracks()[0];
-        micTrack.enabled = false;
-        pc.addTrack(micTrack, mic);
-
-        pc.ontrack = (ev)=> {
-          rtAudio.srcObject = ev.streams[0];
-          rtAudio.play().catch(()=>{});
-        };
-
-        const dc = pc.createDataChannel("events");
-        dc.onmessage = (e)=> {
-          try {
-            const evt = JSON.parse(e.data);
-            if (evt.type === "response.message.delta") {
-              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              if (chunk) appendLine("ai", chunk);
-            }
-          } catch {}
-        };
-
-        const offer = await pc.createOffer({ offerToReceiveAudio:true });
-        await pc.setLocalDescription(offer);
-
-        const r = await fetch(
-          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
-          {
-            method:"POST",
-            headers: {
-              "Authorization":`Bearer ${client_secret.value}`,
-              "Content-Type":"application/sdp"
-            },
-            body: offer.sdp
-          }
-        );
-        const answer = { type:"answer", sdp: await r.text() };
-        await pc.setRemoteDescription(answer);
-
-        let talking = false;
-
-        // Button toggles mic (ASR)
-        pttBtn.onclick = () => {
-          talking = !talking;
-          micTrack.enabled = talking;
-          setStatus(talking ? "user" : "idle");
-          appendLine("me", talking ? "(Listening...)" : "(Stopped)");
-        };
-
-        // AI speaking events
-        rtAudio.addEventListener("playing", ()=> setStatus("ai"));
-        rtAudio.addEventListener("ended",   ()=> setStatus(talking ? "user" : "idle"));
-        rtAudio.addEventListener("pause",   ()=> setStatus(talking ? "user" : "idle"));
-
-      } catch(err) {
-        console.error("Realtime init failed", err);
+    function setAIStatus(speaking) {
+      if (speaking) {
+        pttBtn.className = "ai";
+        pttBtn.textContent = "AI Talking";
+      } else {
+        pttBtn.className = "idle";
+        pttBtn.textContent = "Idle";
       }
     }
-    initRealtime();
 
-    // Demo greeting
-    appendLine("ai", "Hello, this is VoxTalk. How can I help you today?");
+    // Listen to AI audio
+    rtAudio.addEventListener("playing", () => setAIStatus(true));
+    rtAudio.addEventListener("ended",   () => setAIStatus(false));
+    rtAudio.addEventListener("pause",   () => setAIStatus(false));
+
+    // demo only: simulate AI speech for 3s
+    setTimeout(() => {
+      setAIStatus(true);
+      setTimeout(() => setAIStatus(false), 3000);
+    }, 1000);
   </script>
 </body>
 </html>
