@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk (Debug)</title>
+  <title>VoxTalk</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">Debug Mode</p>
+    <p class="demo-label">Demo</p>
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false"></button>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
@@ -55,27 +55,22 @@
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
-            console.log("EVENT:", evt.type, evt); // 🔎 Debug: log all events
+            console.log("EVENT:", evt.type, evt);
 
             if (evt.type === "response.message.delta") {
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
 
-            // Experiment: temporary halo test
-            if (evt.type === "response.audio.delta") {
-              console.log("Audio chunk received");
+            // 🔹 Halo ON while transcript/audio deltas arrive
+            if (evt.type === "response.audio_transcript.delta") {
+              console.log("AI is speaking (transcript delta)");
               setSpeaking(true);
-              clearTimeout(window._speakTimer);
-              window._speakTimer = setTimeout(()=> setSpeaking(false), 400);
             }
 
-            if (evt.type === "response.audio.start") {
-              console.log("AI started speaking");
-              setSpeaking(true);
-            }
-            if (evt.type === "response.audio.end") {
-              console.log("AI finished speaking");
+            // 🔹 Halo OFF when audio ends
+            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
+              console.log("AI finished speaking (audio done/stopped)");
               setSpeaking(false);
             }
 
@@ -84,8 +79,10 @@
           }
         };
 
-        // Also log audio element events
+        // Fallback audio element events
+        let firstPlay = true;
         rtAudio.addEventListener("playing", ()=> {
+          if (firstPlay) { firstPlay = false; return; }
           console.log("Fallback: audio element playing");
           setSpeaking(true);
         });
