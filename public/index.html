@@ -31,7 +31,6 @@
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    function setListening(on) { pttBtn.classList.toggle('listening', on); }
     function setSpeaking(on)  { pttBtn.classList.toggle('speaking', on); }
 
     async function initRealtime() {
@@ -82,33 +81,26 @@
         pttBtn.onclick = () => {
           talking = !talking;
           micTrack.enabled = talking;
-
           if (talking) {
-            setListening(true);
-            setSpeaking(false);
-            appendLine("me", "(Listening...)");
+            appendLine("me","(Listening...)");
           } else {
-            setListening(false);
             setSpeaking(false);
-            appendLine("me", "(Stopped)");
+            appendLine("me","(Stopped)");
           }
         };
 
-        // AI audio events
+        // AI audio events → only hook here
         rtAudio.addEventListener("playing", () => {
-          setSpeaking(true);
-          setListening(false); // stop blue when AI talks
+          setSpeaking(true); // pulsing green
         });
 
         rtAudio.addEventListener("ended", () => {
           setSpeaking(false);
-          setListening(false);
           talking = false;
         });
 
         rtAudio.addEventListener("pause", () => {
           setSpeaking(false);
-          setListening(false);
           talking = false;
         });
 
