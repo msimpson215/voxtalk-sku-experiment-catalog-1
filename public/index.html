@@ -62,16 +62,21 @@
               if (chunk) appendLine("ai", chunk);
             }
 
-            // 🔹 Halo ON while transcript/audio deltas arrive
+            // 🔹 Transcript deltas → halo ON, reset timer
             if (evt.type === "response.audio_transcript.delta") {
               console.log("AI is speaking (transcript delta)");
               setSpeaking(true);
+              clearTimeout(window._speakTimer);
+              window._speakTimer = setTimeout(()=> {
+                setSpeaking(false);
+              }, 400);
             }
 
-            // 🔹 Halo OFF when audio ends
+            // 🔹 Hard stop at audio done
             if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
               console.log("AI finished speaking (audio done/stopped)");
               setSpeaking(false);
+              clearTimeout(window._speakTimer);
             }
 
           } catch(err) {
