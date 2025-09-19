@@ -31,7 +31,9 @@
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
+    function setSpeaking(on) { 
+      pttBtn.classList.toggle('speaking', on); 
+    }
 
     async function initRealtime() {
       try {
@@ -60,13 +62,18 @@
             }
 
             if (evt.type === "response.audio.delta") {
-              // 🔑 Halo only when AI sends audio
+              // 🔑 Primary: pulse when audio chunks arrive
               setSpeaking(true);
               clearTimeout(window._speakTimer);
               window._speakTimer = setTimeout(()=> setSpeaking(false), 500);
             }
           } catch {}
         };
+
+        // 🔑 Fallback: use audio element events
+        rtAudio.addEventListener("playing", ()=> setSpeaking(true));
+        rtAudio.addEventListener("pause",   ()=> setSpeaking(false));
+        rtAudio.addEventListener("ended",   ()=> setSpeaking(false));
 
         const offer = await pc.createOffer({ offerToReceiveAudio:true });
         await pc.setLocalDescription(offer);
