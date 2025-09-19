@@ -61,20 +61,32 @@
               if (chunk) appendLine("ai", chunk);
             }
 
-            // 🔹 Preferred: explicit audio start/end events
+            // Preferred hooks
             if (evt.type === "response.audio.start") {
               console.log("AI started speaking");
-              setSpeaking(true);   // halo ON
+              setSpeaking(true);
             }
             if (evt.type === "response.audio.end") {
               console.log("AI finished speaking");
-              setSpeaking(false);  // halo OFF
+              setSpeaking(false);
             }
+
+            // Fallback: audio deltas
+            if (evt.type === "response.audio.delta") {
+              setSpeaking(true);
+              clearTimeout(window._speakTimer);
+              window._speakTimer = setTimeout(()=> {
+                setSpeaking(false);
+              }, 400); // turn off after pause in audio chunks
+            }
+
           } catch {}
         };
 
-        // 🔹 Fallback: use audio element events
+        // Last-resort fallback: audio element
+        let firstPlay = true;
         rtAudio.addEventListener("playing", ()=> {
+          if (firstPlay) { firstPlay = false; return; }
           console.log("Fallback: audio element playing");
           setSpeaking(true);
         });
@@ -113,7 +125,6 @@
             appendLine("me","(Listening...)");
           } else {
             setSpeaking(false);
-            // 🔑 Immediately stop AI audio
             rtAudio.pause();
             rtAudio.currentTime = 0;
             appendLine("me","(Stopped)");
