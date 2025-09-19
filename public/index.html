@@ -2,52 +2,107 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk AI Status Test</title>
-  <style>
-    body {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:100vh; background:#f9fafb; font-family:sans-serif;
-    }
-    #pttBtn {
-      width:140px; height:140px;
-      border:none; border-radius:50%; cursor:pointer;
-      background:#d1d5db; /* gray idle */
-      font-size:16px; font-weight:bold; color:#fff;
-      transition: background 0.3s;
-    }
-    #pttBtn.ai { background:#1e3a8a; }  /* dark blue when AI speaking */
-    #pttBtn.idle { background:#9ca3af; } /* gray idle */
-  </style>
+  <title>VoxTalk</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>VoxTalk Test</h1>
-  <button id="pttBtn" class="idle">Idle</button>
-  <audio id="remote" autoplay playsinline></audio>
+  <div class="app">
+    <p class="demo-label">Demo</p>
+    <h1>Talk to VoxTalk</h1>
+    <button id="pttBtn" aria-pressed="false"></button>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <audio id="remote" autoplay playsinline></audio>
+  </div>
 
   <script>
-    const pttBtn = document.getElementById("pttBtn");
-    const rtAudio = document.getElementById("remote");
+    const pttBtn   = document.getElementById('pttBtn');
+    const answerEl = document.getElementById('answer');
+    const rtAudio  = document.getElementById('remote');
 
-    function setAIStatus(speaking) {
-      if (speaking) {
-        pttBtn.className = "ai";
-        pttBtn.textContent = "AI Talking";
-      } else {
-        pttBtn.className = "idle";
-        pttBtn.textContent = "Idle";
-      }
+    function appendLine(role, text) {
+      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
+                       <span class="text">${text}</span>`;
+      answerEl.appendChild(div);
+      answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    // Listen to AI audio
-    rtAudio.addEventListener("playing", () => setAIStatus(true));
-    rtAudio.addEventListener("ended",   () => setAIStatus(false));
-    rtAudio.addEventListener("pause",   () => setAIStatus(false));
+    function setListening(on) { pttBtn.classList.toggle('listening', on); }
+    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
 
-    // demo only: simulate AI speech for 3s
-    setTimeout(() => {
-      setAIStatus(true);
-      setTimeout(() => setAIStatus(false), 3000);
-    }, 1000);
+    async function initRealtime() {
+      try {
+        const s = await fetch("/session", { method:"POST" });
+        const { client_secret, model, voice } = await s.json();
+
+        const pc = new RTCPeerConnection();
+        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const micTrack = mic.getTracks()[0];
+        micTrack.enabled = false;
+        pc.addTrack(micTrack, mic);
+
+        pc.ontrack = (ev)=> {
+          rtAudio.srcObject = ev.streams[0];
+          rtAudio.play().catch(()=>{});
+        };
+
+        const dc = pc.createDataChannel("events");
+        dc.onmessage = (e)=> {
+          try {
+            const evt = JSON.parse(e.data);
+            if (evt.type === "response.message.delta") {
+              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              if (chunk) appendLine("ai", chunk);
+            }
+          } catch {}
+        };
+
+        const offer = await pc.createOffer({ offerToReceiveAudio:true });
+        await pc.setLocalDescription(offer);
+
+        const r = await fetch(
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
+          {
+            method:"POST",
+            headers: {
+              "Authorization":`Bearer ${client_secret.value}`,
+              "Content-Type":"application/sdp"
+            },
+            body: offer.sdp
+          }
+        );
+        const answer = { type:"answer", sdp: await r.text() };
+        await pc.setRemoteDescription(answer);
+
+        let talking = false;
+        pttBtn.onclick = () => {
+          talking = !talking;
+          micTrack.enabled = talking;
+          setListening(talking);
+          if (talking) {
+            appendLine("me","(Listening...)");
+          } else {
+            setListening(false); setSpeaking(false);
+            appendLine("me","(Stopped)");
+          }
+        };
+
+        rtAudio.addEventListener("playing", ()=> setSpeaking(true));
+        rtAudio.addEventListener("ended",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+        rtAudio.addEventListener("pause",   ()=> { setSpeaking(false); setListening(false); talking=false; });
+
+      } catch(err) {
+        console.error("Realtime init failed", err);
+      }
+    }
+    initRealtime();
+
+    // Custom greeting
+    appendLine("ai", "Hello, this is VoxTalk. I was created by your dad, Marty Simpson.<br><br>Hello Mia and Rachel, nice to meet you!<br><br>You can ask me anything you would like.");
   </script>
 </body>
 </html>
