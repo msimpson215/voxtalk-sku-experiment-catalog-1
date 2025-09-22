@@ -7,12 +7,30 @@ body {
   background: radial-gradient(circle at 50% 20%, #dbeafe, #93c5fd 40%, #1e3a8a 90%);
 }
 
-.app { text-align:center; max-width:600px; }
-.demo-label { font-size:14px; font-weight:600; color:black; margin-bottom:4px; }
-.talk-label { margin:6px 0; font-size:22px; color:black; }
+.app { 
+  text-align:center; 
+  max-width:600px; 
+}
+
+.demo-label { 
+  font-size:14px; 
+  font-weight:600; 
+  color:black; 
+  margin-bottom:4px; 
+}
+
+.talk-label { 
+  margin:6px 0; 
+  font-size:22px; 
+  color:black; 
+}
 
 #pttBtn {
-  width:120px; height:120px; border-radius:50%; border:none; cursor:pointer;
+  width:120px; 
+  height:120px; 
+  border-radius:50%; 
+  border:none; 
+  cursor:pointer;
   background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
   box-shadow:0 6px 18px rgba(37,99,235,.3);
   transition: transform 0.15s ease, box-shadow 0.3s ease;
@@ -20,17 +38,24 @@ body {
   overflow: visible;
 }
 
-.pulse-container { position:absolute; inset:0; }
+.pulse-container { 
+  position:absolute; 
+  inset:0; 
+}
+
 .ring {
   position:absolute;
-  top:50%; left:50%;
-  width:120px; height:120px;
+  top:50%; 
+  left:50%;
+  width:120px; 
+  height:120px;
   margin:-60px 0 0 -60px;
   border-radius:50%;
   border:3px solid rgba(59,130,246,0.7);
   opacity:0;
 }
 
+/* ✅ Slowed-down ripple timing */
 #pttBtn.speaking .ring { animation: ripple 1.6s ease-in-out infinite; }
 #pttBtn.speaking .ring:nth-child(1){ animation-delay: 0s; }
 #pttBtn.speaking .ring:nth-child(2){ animation-delay: 0.4s; }
@@ -46,20 +71,4 @@ body {
 
 .hint {
   margin-top:8px;
-  font-size:0.75rem;
-  color:rgba(255,255,255,0.6);
-}
-
-#answer {
-  margin-top:20px;
-  padding:12px;
-  border-radius:12px;
-  background:white;
-  min-height:80px;
-  width: 95%;
-  max-width: 600px;
-  font-size:14px;
-  box-shadow:0 0 8px rgba(0,0,0,0.1);
-}
-.line { margin:6px 0; }
-.powered { font-size:0.7rem; color:white; position:fixed; bottom:8px; right:12px; opacity:0.7; }
+  font-
