@@ -11,14 +11,11 @@
   <div class="app">
     <h1 class="title">Talk to VoxTalk<span class="tm">™</span></h1>
 
-    <!-- Debug Indicator -->
-    <div id="debug-indicator"></div>
-
     <div class="button-wrapper">
       <button id="pttBtn" aria-pressed="false">
         <span class="button-label">Click to Talk</span>
         <div class="halo-container">
-          <!-- 12 halo rings for ripple effect -->
+          <!-- 12 halo rings -->
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
@@ -44,10 +41,7 @@
     const buttonLabel = pttBtn.querySelector('.button-label');
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
-    const debugDot = document.getElementById('debug-indicator');
-
     let firstClick = true;
-    let cooldown = false;
 
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
@@ -60,15 +54,9 @@
     }
 
     function setSpeaking(on) {
-      console.log("🔵 setSpeaking:", on);
       if (on) {
-        pttBtn.classList.remove('speaking'); // reset animation state
-        void pttBtn.offsetWidth;            // force reflow
-        debugDot.classList.add('active');   // turn green
-      } else {
-        debugDot.classList.remove('active'); // turn off
-        debugDot.classList.add('stopped');   // flash red momentarily
-        setTimeout(()=> debugDot.classList.remove('stopped'), 500);
+        pttBtn.classList.remove('speaking');
+        void pttBtn.offsetWidth; // force reflow
       }
       pttBtn.classList.toggle('speaking', on);
       if (!firstClick) buttonLabel.style.opacity = on ? "0" : "0.5";
@@ -78,7 +66,6 @@
       try {
         const s = await fetch("/session", { method:"POST" });
         const { client_secret, model, voice } = await s.json();
-        console.log("🔧 /session:", client_secret ? "OK" : "Missing");
 
         const pc = new RTCPeerConnection();
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
@@ -95,8 +82,6 @@
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
-            console.log("EVENT:", evt.type);
-
             if (evt.type === "response.message.delta") {
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
@@ -125,10 +110,6 @@
 
         let talking = false;
         pttBtn.onclick = () => {
-          if (cooldown) return;
-          cooldown = true;
-          setTimeout(()=> cooldown = false, 300);
-
           if (firstClick) {
             buttonLabel.style.opacity = 0;
             firstClick = false;
