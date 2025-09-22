@@ -45,11 +45,8 @@
     }
 
     function setSpeaking(on) {
-      if (on) {
-        pttBtn.classList.add('speaking');
-      } else {
-        pttBtn.classList.remove('speaking');
-      }
+      if (on) pttBtn.classList.add('speaking');
+      else pttBtn.classList.remove('speaking');
     }
 
     async function initRealtime() {
@@ -70,11 +67,11 @@
 
         const pc = new RTCPeerConnection();
 
-        // 🎯 More sensitive analyser + longer cutoff delay
         pc.ontrack = (ev)=> {
           const remoteStream = ev.streams[0];
           rtAudio.srcObject = remoteStream;
 
+          // ✅ Audio analyser for halos
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const source = audioCtx.createMediaStreamSource(remoteStream);
           const analyser = audioCtx.createAnalyser();
@@ -92,13 +89,13 @@
             const rms = Math.sqrt(sum / dataArray.length);
             const now = performance.now();
 
-            if (rms > 0.01) { // lowered threshold for easier trigger
+            if (rms > 0.01) {
               lastAbove = now;
               if (!aiSpeaking) {
                 aiSpeaking = true;
                 setSpeaking(true);
               }
-            } else if (aiSpeaking && now - lastAbove > 500) { // longer cutoff
+            } else if (aiSpeaking && now - lastAbove > 500) {
               aiSpeaking = false;
               setSpeaking(false);
             }
@@ -125,7 +122,6 @@
             if (evt.type === "response.audio_transcript.delta") {
               const transcript = evt.delta.map(d => d.text || "").join("");
               if (transcript) appendLine("me", transcript);
-              // halos handled by analyser, not here
             }
           } catch(err) { console.error("Parse error:", e.data, err); }
         }
