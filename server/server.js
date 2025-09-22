@@ -13,7 +13,7 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "nova", // friendly upbeat
+        voice: "nova",
         instructions:
           "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
       })
