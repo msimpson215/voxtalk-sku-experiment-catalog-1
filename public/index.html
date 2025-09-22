@@ -2,35 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Talk to VoxTalk (demo)</title>
+  <title>Talk to VoxTalk™ (demo)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <h1>Talk to VoxTalk <span class="demo-label">(demo)</span></h1>
+    <h1 class="title">Talk to VoxTalk<span class="tm">™</span> <span class="demo-label">(demo)</span></h1>
 
     <button id="pttBtn" aria-pressed="false">
       <span class="button-label">Click to Talk</span>
       <div class="halo-container">
-        <!-- 10 halo rings for staggered pulse effect -->
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
-        <div class="halo"></div>
+        <!-- 10 halos -->
+        <div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div>
+        <div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div>
       </div>
     </button>
 
-    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <!-- Transcript pill box -->
+    <div id="answer" class="transcript-box">
+      <div class="muted">Conversation will appear here.</div>
+    </div>
+
     <audio id="remote" autoplay playsinline></audio>
   </div>
+
+  <!-- Footer credit -->
+  <footer class="footer">Powered by VoxTalk<span class="tm">™</span></footer>
 
   <script>
     const pttBtn   = document.getElementById('pttBtn');
@@ -50,7 +49,7 @@
 
     function setSpeaking(on) {
       pttBtn.classList.toggle('speaking', on);
-      buttonLabel.style.opacity = on ? "0" : "0.5"; // hide while speaking
+      buttonLabel.style.opacity = on ? "0" : "0.5";
     }
 
     async function initRealtime() {
@@ -73,23 +72,19 @@
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
-
             if (evt.type === "response.message.delta") {
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
-
             if (evt.type === "response.audio_transcript.delta") {
               setSpeaking(true);
               clearTimeout(window._speakTimer);
               window._speakTimer = setTimeout(()=> setSpeaking(false), 1000);
             }
-
             if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
               setSpeaking(false);
               clearTimeout(window._speakTimer);
             }
-
           } catch(err) { console.error("Parse error:", e.data, err); }
         };
 
