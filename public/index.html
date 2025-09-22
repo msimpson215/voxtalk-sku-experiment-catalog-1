@@ -11,6 +11,7 @@
     <h1 class="demo-label">Demo</h1>
     <h2 class="talk-label">Talk to VoxTalk™</h2>
 
+    <!-- Main Talk Button -->
     <button id="pttBtn" aria-pressed="false">
       <span class="pulse-container">
         <span class="ring"></span>
@@ -22,8 +23,10 @@
     </button>
     <div class="hint">Click to Talk</div>
 
+    <!-- Transcript Box -->
     <div id="answer"></div>
 
+    <!-- Remote Audio -->
     <audio id="remote" autoplay playsinline></audio>
 
     <p class="powered">Powered by VoxTalk™</p>
@@ -70,30 +73,29 @@
 
         const pc = new RTCPeerConnection();
 
-        let audioCtx, analyser, dataArray;
-        let aiSpeaking = false;
-        let lastAbove = 0;
-
         pc.ontrack = (ev)=> {
           const remoteStream = ev.streams[0];
           rtAudio.srcObject = remoteStream;
 
-          // 🎯 ChatGPT-style halo control using audio levels
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          // 🎯 ChatGPT-style halo control using audio level
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const source = audioCtx.createMediaStreamSource(remoteStream);
-          analyser = audioCtx.createAnalyser();
+          const analyser = audioCtx.createAnalyser();
           analyser.fftSize = 512;
-          dataArray = new Float32Array(analyser.fftSize);
+          const dataArray = new Float32Array(analyser.fftSize);
           source.connect(analyser);
+
+          let aiSpeaking = false;
+          let lastAbove = 0;
 
           function monitor() {
             analyser.getFloatTimeDomainData(dataArray);
             let sum = 0;
             for (let i=0;i<dataArray.length;i++) sum += dataArray[i]*dataArray[i];
             const rms = Math.sqrt(sum / dataArray.length);
-
             const now = performance.now();
-            if (rms > 0.02) { // sensitivity threshold
+
+            if (rms > 0.02) { // tweak threshold if needed
               lastAbove = now;
               if (!aiSpeaking) {
                 aiSpeaking = true;
@@ -126,7 +128,7 @@
             if (evt.type === "response.audio_transcript.delta") {
               const transcript = evt.delta.map(d => d.text || "").join("");
               if (transcript) appendLine("me", transcript);
-              // ⛔ no halo toggle here — handled by analyser now
+              // ⛔ halo toggle removed here — handled by analyser
             }
           } catch(err) { console.error("Parse error:", e.data, err); }
         }
