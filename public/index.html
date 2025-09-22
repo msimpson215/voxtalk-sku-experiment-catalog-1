@@ -1,144 +1,37 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Talk to VoxTalk™</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="app">
-    <h1 class="title">Talk to VoxTalk<span class="tm">™</span></h1>
+import express from "express";
 
-    <div class="button-wrapper">
-      <button id="pttBtn" aria-pressed="false">
-        <span class="button-label">Click to Talk</span>
-        <div class="halo-container">
-          <!-- 10 halo rings -->
-          <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-          <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-          <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-          <div class="halo"></div>
-        </div>
-      </button>
-    </div>
+const app = express();
+app.use(express.static("public"));
 
-    <div id="answer" class="transcript-box">
-      <div class="muted">Conversation will appear here.</div>
-    </div>
+app.post("/session", async (req, res) => {
+  try {
+    const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-realtime-preview",
+        voice: "nova",
+        instructions:
+          "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
+      })
+    });
 
-    <audio id="remote" autoplay playsinline></audio>
-  </div>
+    const data = await r.json();
+    console.log("🔧 OpenAI raw response:", data); // 👈 NEW LINE - see exactly what we get back
 
-  <footer class="footer">
-    <span class="demo-watermark">DEMO</span>
-    Powered by VoxTalk<span class="tm">™</span>
-  </footer>
+    res.json({
+      client_secret: data.client_secret,
+      model: "gpt-4o-realtime-preview",
+      voice: "nova"
+    });
+  } catch (e) {
+    console.error("Session error:", e);
+    res.status(500).json({ error: "session failed" });
+  }
+});
 
-  <script>
-    const pttBtn   = document.getElementById('pttBtn');
-    const buttonLabel = pttBtn.querySelector('.button-label');
-    const answerEl = document.getElementById('answer');
-    const rtAudio  = document.getElementById('remote');
-    let firstClick = true;
-
-    function appendLine(role, text) {
-      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
-      const div = document.createElement('div');
-      div.className = 'line';
-      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'VoxTalk:'}</span>
-                       <span class="text">${text}</span>`;
-      answerEl.appendChild(div);
-      answerEl.scrollTop = answerEl.scrollHeight;
-    }
-
-    function setSpeaking(on) {
-      if (on) {
-        pttBtn.classList.remove('speaking');
-        void pttBtn.offsetWidth; // force reflow
-      }
-      pttBtn.classList.toggle('speaking', on);
-      if (!firstClick) buttonLabel.style.opacity = on ? "0" : "0.5";
-    }
-
-    async function initRealtime() {
-      try {
-        const s = await fetch("/session", { method:"POST" });
-        const sessionData = await s.json();
-
-        console.log("🔧 Session data received:", sessionData); // ✅ New debug line
-        if (!sessionData.client_secret) {
-          console.error("❌ No client_secret in session data");
-          return;
-        }
-
-        const clientSecret = sessionData.client_secret; // ✅ changed from .value
-
-        const pc = new RTCPeerConnection();
-        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
-        const micTrack = mic.getTracks()[0];
-        micTrack.enabled = false;
-        pc.addTrack(micTrack, mic);
-
-        pc.ontrack = (ev)=> {
-          rtAudio.srcObject = ev.streams[0];
-          rtAudio.play().catch(()=>{});
-        };
-
-        const dc = pc.createDataChannel("events");
-        dc.onmessage = (e)=> {
-          try {
-            const evt = JSON.parse(e.data);
-            if (evt.type === "response.message.delta") {
-              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              if (chunk) appendLine("ai", chunk);
-            }
-            if (evt.type === "response.audio.start") setSpeaking(true);
-            if (evt.type === "response.audio.end" || evt.type === "output_audio_buffer.stopped") setSpeaking(false);
-          } catch(err) { console.error("Parse error:", e.data, err); }
-        };
-
-        const offer = await pc.createOffer({ offerToReceiveAudio:true });
-        await pc.setLocalDescription(offer);
-
-        const r = await fetch(
-          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(sessionData.model)}&voice=${sessionData.voice}`,
-          {
-            method:"POST",
-            headers: {
-              "Authorization":`Bearer ${clientSecret}`, // ✅ FIXED HERE
-              "Content-Type":"application/sdp"
-            },
-            body: offer.sdp
-          }
-        );
-        const answer = { type:"answer", sdp: await r.text() };
-        await pc.setRemoteDescription(answer);
-
-        let talking = false;
-        pttBtn.onclick = () => {
-          if (firstClick) {
-            buttonLabel.style.opacity = 0;
-            firstClick = false;
-          }
-          talking = !talking;
-          micTrack.enabled = talking;
-          if (talking) {
-            appendLine("me","(Listening...)");
-          } else {
-            appendLine("me","(Stopped)");
-            setSpeaking(false);
-            rtAudio.pause();
-            rtAudio.currentTime = 0;
-          }
-        };
-
-      } catch(err) {
-        console.error("Realtime init failed", err);
-      }
-    }
-    initRealtime();
-  </script>
-</body>
-</html>
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("✅ Server running on " + PORT));
