@@ -20,6 +20,8 @@ app.post("/session", async (req, res) => {
     });
 
     const data = await r.json();
+    console.log("🔧 OpenAI raw response:", data); // 👈 NEW LINE - see exactly what we get back
+
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
