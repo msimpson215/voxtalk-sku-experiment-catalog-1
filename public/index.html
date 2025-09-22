@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -12,14 +11,11 @@
     <h1 class="demo-label">Demo</h1>
     <h2 class="talk-label">Talk to VoxTalk™</h2>
 
-    <!-- Main Talk Button -->
     <button id="pttBtn" aria-pressed="false"></button>
     <div class="hint">Click to Talk</div>
 
-    <!-- Transcript Box -->
     <div id="answer"></div>
 
-    <!-- Remote Audio -->
     <audio id="remote" autoplay playsinline></audio>
 
     <p class="powered">Powered by VoxTalk™</p>
@@ -48,6 +44,8 @@
         const s = await fetch("/session", { method:"POST" });
         const sessionData = await s.json();
 
+        console.log("🔑 Session response:", sessionData); // <-- NEW: log full session data
+
         if (!s.ok) {
           console.error("❌ /session failed:", sessionData);
           appendLine("ai", `Session error: ${sessionData?.error || "unknown error"}`);
@@ -61,17 +59,13 @@
         }
 
         const pc = new RTCPeerConnection();
-
-        // Remote audio hook
         pc.ontrack = (ev)=> { rtAudio.srcObject = ev.streams[0]; };
 
-        // Also accept server-created data channel (common in some builds)
         pc.ondatachannel = (ev) => {
           const ch = ev.channel;
           ch.onmessage = handleEventMessage;
         };
 
-        // Local channel (keeps old behavior)
         const dc = pc.createDataChannel("events");
         dc.onmessage = handleEventMessage;
 
@@ -102,7 +96,7 @@
             headers: {
               "Authorization":`Bearer ${client_secret.value || client_secret}`,
               "Content-Type":"application/sdp",
-              "OpenAI-Beta":"realtime=v1"   // 🔑 required for realtime
+              "OpenAI-Beta":"realtime=v1"
             },
             body: offer.sdp
           }
