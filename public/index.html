@@ -66,6 +66,13 @@
       try {
         const s = await fetch("/session", { method:"POST" });
         const sessionData = await s.json();
+
+        console.log("🔧 Session data received:", sessionData); // ✅ New debug line
+        if (!sessionData.client_secret) {
+          console.error("❌ No client_secret in session data");
+          return;
+        }
+
         const clientSecret = sessionData.client_secret; // ✅ changed from .value
 
         const pc = new RTCPeerConnection();
@@ -100,7 +107,7 @@
           {
             method:"POST",
             headers: {
-              "Authorization":`Bearer ${clientSecret}`, // ✅ FIX HERE
+              "Authorization":`Bearer ${clientSecret}`, // ✅ FIXED HERE
               "Content-Type":"application/sdp"
             },
             body: offer.sdp
