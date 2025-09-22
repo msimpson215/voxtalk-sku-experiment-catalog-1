@@ -34,6 +34,7 @@
     const buttonLabel = pttBtn.querySelector('.button-label');
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
+    let firstClick = true;
 
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
@@ -47,13 +48,14 @@
 
     function setSpeaking(on) {
       pttBtn.classList.toggle('speaking', on);
-      buttonLabel.style.opacity = on ? "0" : "0.5";
+      if (!firstClick) buttonLabel.style.opacity = on ? "0" : "0.5";
     }
 
     async function initRealtime() {
       try {
         const s = await fetch("/session", { method:"POST" });
         const { client_secret, model, voice } = await s.json();
+        console.log("🔧 /session response:", client_secret ? "client_secret OK" : "NO CLIENT SECRET");
 
         const pc = new RTCPeerConnection();
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
@@ -70,13 +72,13 @@
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
+            console.log("EVENT:", evt.type, evt);
+
             if (evt.type === "response.message.delta") {
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
-            // Halo ON when audio starts
             if (evt.type === "response.audio.start") setSpeaking(true);
-            // Halo OFF when audio ends
             if (evt.type === "response.audio.end" || evt.type === "output_audio_buffer.stopped") setSpeaking(false);
           } catch(err) { console.error("Parse error:", e.data, err); }
         };
@@ -100,14 +102,18 @@
 
         let talking = false;
         pttBtn.onclick = () => {
+          if (firstClick) {
+            buttonLabel.style.opacity = 0; // hide forever after first click
+            firstClick = false;
+          }
           talking = !talking;
           micTrack.enabled = talking;
           if (talking) {
             appendLine("me","(Listening...)");
           } else {
             appendLine("me","(Stopped)");
-            setSpeaking(false); // immediately stop halo
-            rtAudio.pause();    // interrupt audio playback
+            setSpeaking(false);
+            rtAudio.pause();
             rtAudio.currentTime = 0;
           }
         };
