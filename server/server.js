@@ -20,7 +20,7 @@ app.post("/session", async (req, res) => {
     });
 
     const data = await r.json();
-    console.log("🔧 OpenAI raw response:", data); // 👈 NEW LINE - see exactly what we get back
+    console.log("🔧 OpenAI raw response:", data); // Always log the full payload
 
     res.json({
       client_secret: data.client_secret,
