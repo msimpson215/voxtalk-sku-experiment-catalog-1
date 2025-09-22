@@ -11,10 +11,14 @@
   <div class="app">
     <h1 class="title">Talk to VoxTalk<span class="tm">™</span></h1>
 
+    <!-- Debug Indicator -->
+    <div id="debug-indicator"></div>
+
     <div class="button-wrapper">
       <button id="pttBtn" aria-pressed="false">
         <span class="button-label">Click to Talk</span>
         <div class="halo-container">
+          <!-- 12 halo rings for ripple effect -->
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
@@ -40,6 +44,8 @@
     const buttonLabel = pttBtn.querySelector('.button-label');
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
+    const debugDot = document.getElementById('debug-indicator');
+
     let firstClick = true;
     let cooldown = false;
 
@@ -58,6 +64,11 @@
       if (on) {
         pttBtn.classList.remove('speaking'); // reset animation state
         void pttBtn.offsetWidth;            // force reflow
+        debugDot.classList.add('active');   // turn green
+      } else {
+        debugDot.classList.remove('active'); // turn off
+        debugDot.classList.add('stopped');   // flash red momentarily
+        setTimeout(()=> debugDot.classList.remove('stopped'), 500);
       }
       pttBtn.classList.toggle('speaking', on);
       if (!firstClick) buttonLabel.style.opacity = on ? "0" : "0.5";
