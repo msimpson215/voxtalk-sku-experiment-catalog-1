@@ -9,18 +9,17 @@
 </head>
 <body>
   <div class="app">
-    <h1 class="title">Talk to VoxTalk<span class="tm">™</span> <span class="demo-label">(demo)</span></h1>
+    <p class="demo-label">(demo)</p>
+    <h1 class="title">Talk to VoxTalk<span class="tm">™</span></h1>
 
     <button id="pttBtn" aria-pressed="false">
       <span class="button-label">Click to Talk</span>
       <div class="halo-container">
-        <!-- 10 halos -->
-        <div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div>
-        <div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div><div class="halo"></div>
+        <div class="halo"></div><div class="halo"></div><div class="halo"></div>
+        <div class="halo"></div><div class="halo"></div><div class="halo"></div>
       </div>
     </button>
 
-    <!-- Transcript pill box -->
     <div id="answer" class="transcript-box">
       <div class="muted">Conversation will appear here.</div>
     </div>
@@ -28,7 +27,6 @@
     <audio id="remote" autoplay playsinline></audio>
   </div>
 
-  <!-- Footer credit -->
   <footer class="footer">Powered by VoxTalk<span class="tm">™</span></footer>
 
   <script>
@@ -76,15 +74,10 @@
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
-            if (evt.type === "response.audio_transcript.delta") {
-              setSpeaking(true);
-              clearTimeout(window._speakTimer);
-              window._speakTimer = setTimeout(()=> setSpeaking(false), 1000);
-            }
-            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
-              setSpeaking(false);
-              clearTimeout(window._speakTimer);
-            }
+            // Halo ON when audio starts
+            if (evt.type === "response.audio.start") setSpeaking(true);
+            // Halo OFF when audio ends
+            if (evt.type === "response.audio.end" || evt.type === "output_audio_buffer.stopped") setSpeaking(false);
           } catch(err) { console.error("Parse error:", e.data, err); }
         };
 
@@ -109,8 +102,14 @@
         pttBtn.onclick = () => {
           talking = !talking;
           micTrack.enabled = talking;
-          if (talking) appendLine("me","(Listening...)");
-          else appendLine("me","(Stopped)");
+          if (talking) {
+            appendLine("me","(Listening...)");
+          } else {
+            appendLine("me","(Stopped)");
+            setSpeaking(false); // immediately stop halo
+            rtAudio.pause();    // interrupt audio playback
+            rtAudio.currentTime = 0;
+          }
         };
 
       } catch(err) {
