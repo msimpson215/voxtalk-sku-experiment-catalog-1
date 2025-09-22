@@ -13,9 +13,9 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "alloy",
+        voice: "nova",
         instructions:
-          "You are an AI voice assistant. ALWAYS respond in English. Translate if needed, but reply only in English."
+          "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
       })
     });
 
@@ -23,7 +23,7 @@ app.post("/session", async (req, res) => {
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy"
+      voice: "nova"
     });
   } catch (e) {
     console.error("Session error:", e);
