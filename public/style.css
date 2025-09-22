@@ -30,17 +30,18 @@ body {
   border:3px solid rgba(59,130,246,0.7);
   opacity:0;
 }
-#pttBtn.speaking .ring { animation: ripple 1.2s ease-in-out infinite; }
-#pttBtn.speaking .ring:nth-child(1) { animation-delay: 0s; }
-#pttBtn.speaking .ring:nth-child(2) { animation-delay: 0.3s; }
-#pttBtn.speaking .ring:nth-child(3) { animation-delay: 0.6s; }
-#pttBtn.speaking .ring:nth-child(4) { animation-delay: 0.9s; }
-#pttBtn.speaking .ring:nth-child(5) { animation-delay: 1.2s; }
+
+#pttBtn.speaking .ring { animation: ripple 1.6s ease-in-out infinite; }
+#pttBtn.speaking .ring:nth-child(1){ animation-delay: 0s; }
+#pttBtn.speaking .ring:nth-child(2){ animation-delay: 0.4s; }
+#pttBtn.speaking .ring:nth-child(3){ animation-delay: 0.8s; }
+#pttBtn.speaking .ring:nth-child(4){ animation-delay: 1.2s; }
+#pttBtn.speaking .ring:nth-child(5){ animation-delay: 1.6s; }
 
 @keyframes ripple {
   0%   { transform: scale(0.85); opacity: 1; }
-  70%  { transform: scale(1.4); opacity: 0.25; }
-  100% { transform: scale(1.6); opacity: 0; }
+  70%  { transform: scale(1.5); opacity: 0.3; }
+  100% { transform: scale(1.7); opacity: 0; }
 }
 
 .hint {
