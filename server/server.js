@@ -13,22 +13,13 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "nova",
+        voice: "nova", // friendly upbeat
         instructions:
           "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
       })
     });
 
     const data = await r.json();
-    console.log("🔧 OpenAI Session Response:", data);
-
-    if (!data.client_secret) {
-      console.error("❌ OpenAI returned no client_secret");
-      return res.status(500).json({
-        error: "No client_secret from OpenAI — check API key or billing."
-      });
-    }
-
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
@@ -36,7 +27,7 @@ app.post("/session", async (req, res) => {
     });
   } catch (e) {
     console.error("Session error:", e);
-    res.status(500).json({ error: "Session failed — could not reach OpenAI." });
+    res.status(500).json({ error: "session failed" });
   }
 });
 
