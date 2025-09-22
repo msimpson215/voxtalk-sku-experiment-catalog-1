@@ -2,21 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Talk to VoxTalk™ (demo)</title>
+  <title>Talk to VoxTalk™</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">(demo)</p>
     <h1 class="title">Talk to VoxTalk<span class="tm">™</span></h1>
 
     <div class="button-wrapper">
       <button id="pttBtn" aria-pressed="false">
         <span class="button-label">Click to Talk</span>
         <div class="halo-container">
-          <!-- 12 halos for ripple effect -->
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
@@ -32,7 +30,10 @@
     <audio id="remote" autoplay playsinline></audio>
   </div>
 
-  <footer class="footer">Powered by VoxTalk<span class="tm">™</span></footer>
+  <footer class="footer">
+    <span class="demo-watermark">DEMO</span>
+    Powered by VoxTalk<span class="tm">™</span>
+  </footer>
 
   <script>
     const pttBtn   = document.getElementById('pttBtn');
@@ -40,6 +41,7 @@
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
     let firstClick = true;
+    let cooldown = false;
 
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
@@ -52,6 +54,11 @@
     }
 
     function setSpeaking(on) {
+      console.log("🔵 setSpeaking:", on);
+      if (on) {
+        pttBtn.classList.remove('speaking'); // reset animation state
+        void pttBtn.offsetWidth;            // force reflow
+      }
       pttBtn.classList.toggle('speaking', on);
       if (!firstClick) buttonLabel.style.opacity = on ? "0" : "0.5";
     }
@@ -107,6 +114,10 @@
 
         let talking = false;
         pttBtn.onclick = () => {
+          if (cooldown) return;
+          cooldown = true;
+          setTimeout(()=> cooldown = false, 300);
+
           if (firstClick) {
             buttonLabel.style.opacity = 0;
             firstClick = false;
