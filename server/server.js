@@ -16,7 +16,7 @@ app.post("/session", async (req, res) => {
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
-        "OpenAI-Beta": "realtime=v1"  // ✅ required
+        "OpenAI-Beta": "realtime=v1"
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
