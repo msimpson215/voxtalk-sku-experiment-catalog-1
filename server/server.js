@@ -8,15 +8,7 @@ const app = express();
 app.use(express.static("public"));
 
 app.post("/session", async (req, res) => {
-  console.log("📡 /session route called");
-
-  if (!process.env.OPENAI_API_KEY) {
-    console.error("❌ OPENAI_API_KEY is missing in environment!");
-    return res.status(500).json({ error: "Missing API key" });
-  }
-
   try {
-    console.log("🌐 Sending request to OpenAI Realtime API...");
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
@@ -32,5 +24,18 @@ app.post("/session", async (req, res) => {
       })
     });
 
-    console.log("📥 Response status:", r.status);
     const data = await r.json();
+    console.log("🔧 Session data from OpenAI:", data);
+    res.json({
+      client_secret: data.client_secret,
+      model: "gpt-4o-realtime-preview",
+      voice: "alloy"
+    });
+  } catch (e) {
+    console.error("Session error:", e);
+    res.status(500).json({ error: "session failed" });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("✅ Server running on " + PORT));
