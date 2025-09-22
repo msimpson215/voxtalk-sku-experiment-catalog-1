@@ -1,4 +1,29 @@
-...
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>VoxTalk (Demo)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <h1 class="demo-label">Demo</h1>
+    <h2 class="talk-label">Talk to VoxTalk™</h2>
+
+    <button id="pttBtn" aria-pressed="false">
+      <span class="pulse-container">
+        <span class="ring"></span>
+        <span class="ring"></span>
+        <span class="ring"></span>
+        <span class="ring"></span>
+        <span class="ring"></span>
+      </span>
+    </button>
+    <div class="hint">Click to Talk</div>
+
+    <div id="answer"></div>
+
     <audio id="remote" autoplay playsinline></audio>
 
     <p class="powered">Powered by VoxTalk™</p>
@@ -27,18 +52,12 @@
       }
     }
 
-    // ✅ Attach halo state to audio playback instead of deltas
-    rtAudio.addEventListener("playing", () => setSpeaking(true));
-    rtAudio.addEventListener("pause",   () => setSpeaking(false));
-    rtAudio.addEventListener("ended",   () => setSpeaking(false));
-
     async function initRealtime() {
       try {
         const s = await fetch("/session", { method:"POST" });
         const sessionData = await s.json();
 
         if (!s.ok) {
-          console.error("❌ /session failed:", sessionData);
           appendLine("ai", `Session error: ${sessionData?.error || "unknown error"}`);
           return;
         }
@@ -51,7 +70,43 @@
 
         const pc = new RTCPeerConnection();
 
-        pc.ontrack = (ev)=> { rtAudio.srcObject = ev.streams[0]; };
+        let audioCtx, analyser, dataArray;
+        let aiSpeaking = false;
+        let lastAbove = 0;
+
+        pc.ontrack = (ev)=> {
+          const remoteStream = ev.streams[0];
+          rtAudio.srcObject = remoteStream;
+
+          // 🎯 ChatGPT-style halo control using audio levels
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioCtx.createMediaStreamSource(remoteStream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          dataArray = new Float32Array(analyser.fftSize);
+          source.connect(analyser);
+
+          function monitor() {
+            analyser.getFloatTimeDomainData(dataArray);
+            let sum = 0;
+            for (let i=0;i<dataArray.length;i++) sum += dataArray[i]*dataArray[i];
+            const rms = Math.sqrt(sum / dataArray.length);
+
+            const now = performance.now();
+            if (rms > 0.02) { // sensitivity threshold
+              lastAbove = now;
+              if (!aiSpeaking) {
+                aiSpeaking = true;
+                setSpeaking(true);
+              }
+            } else if (aiSpeaking && now - lastAbove > 250) {
+              aiSpeaking = false;
+              setSpeaking(false);
+            }
+            requestAnimationFrame(monitor);
+          }
+          monitor();
+        };
 
         pc.ondatachannel = (ev) => {
           const ch = ev.channel;
@@ -71,10 +126,7 @@
             if (evt.type === "response.audio_transcript.delta") {
               const transcript = evt.delta.map(d => d.text || "").join("");
               if (transcript) appendLine("me", transcript);
-              // ⛔ removed setSpeaking(true) here, now handled by audio playback
-            }
-            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
-              // ⛔ removed setSpeaking(false) here as well
+              // ⛔ no halo toggle here — handled by analyser now
             }
           } catch(err) { console.error("Parse error:", e.data, err); }
         }
@@ -101,19 +153,11 @@
         );
 
         if (!r.ok) {
-          const errText = await r.text();
-          console.error("❌ Realtime SDP fetch failed:", r.status, errText);
-          appendLine("ai", `Realtime error ${r.status}: ${errText.substring(0,200)}`);
+          appendLine("ai", `Realtime error ${r.status}: ${await r.text()}`);
           return;
         }
 
         const answer = { type:"answer", sdp: await r.text() };
-        if (!answer.sdp || !answer.sdp.startsWith("v=")) {
-          console.error("❌ Invalid SDP answer:", answer.sdp);
-          appendLine("ai", "Invalid SDP received from server.");
-          return;
-        }
-
         await pc.setRemoteDescription(answer);
 
         let talking = false;
@@ -125,7 +169,6 @@
         };
 
       } catch(err) {
-        console.error("Realtime init failed", err);
         appendLine("ai", "Init failed: " + (err?.message || err));
       }
     }
