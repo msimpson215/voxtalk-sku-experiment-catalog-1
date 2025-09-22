@@ -15,11 +15,11 @@
       <button id="pttBtn" aria-pressed="false">
         <span class="button-label">Click to Talk</span>
         <div class="halo-container">
-          <!-- 12 halo rings -->
+          <!-- 10 halo rings -->
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
           <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-          <div class="halo"></div><div class="halo"></div><div class="halo"></div>
+          <div class="halo"></div>
         </div>
       </button>
     </div>
@@ -65,7 +65,8 @@
     async function initRealtime() {
       try {
         const s = await fetch("/session", { method:"POST" });
-        const { client_secret, model, voice } = await s.json();
+        const sessionData = await s.json();
+        const clientSecret = sessionData.client_secret; // ✅ changed from .value
 
         const pc = new RTCPeerConnection();
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
@@ -95,11 +96,11 @@
         await pc.setLocalDescription(offer);
 
         const r = await fetch(
-          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(sessionData.model)}&voice=${sessionData.voice}`,
           {
             method:"POST",
             headers: {
-              "Authorization":`Bearer ${client_secret.value}`,
+              "Authorization":`Bearer ${clientSecret}`, // ✅ FIX HERE
               "Content-Type":"application/sdp"
             },
             body: offer.sdp
