@@ -51,8 +51,11 @@
 
     async function initRealtime() {
       try {
+        console.log("🔑 Fetching session from server...");
         const s = await fetch("/session", { method:"POST" });
+        console.log("📥 /session response status:", s.status);
         const sessionData = await s.json();
+        console.log("🔧 Session response:", sessionData);
 
         if (!s.ok) {
           appendLine("ai", `Session error: ${sessionData?.error || "unknown error"}`);
@@ -71,7 +74,6 @@
           const remoteStream = ev.streams[0];
           rtAudio.srcObject = remoteStream;
 
-          // ✅ Audio analyser for halos
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const source = audioCtx.createMediaStreamSource(remoteStream);
           const analyser = audioCtx.createAnalyser();
@@ -134,6 +136,7 @@
         const offer = await pc.createOffer({ offerToReceiveAudio:true });
         await pc.setLocalDescription(offer);
 
+        console.log("🌐 Sending SDP offer to OpenAI...");
         const r = await fetch(
           `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
           {
@@ -147,12 +150,14 @@
           }
         );
 
+        console.log("📥 Realtime response status:", r.status);
         if (!r.ok) {
           appendLine("ai", `Realtime error ${r.status}: ${await r.text()}`);
           return;
         }
 
         const answer = { type:"answer", sdp: await r.text() };
+        console.log("🔧 SDP answer received, setting remote description...");
         await pc.setRemoteDescription(answer);
 
         let talking = false;
@@ -164,10 +169,10 @@
         };
 
       } catch(err) {
+        console.error("💥 Init failed", err);
         appendLine("ai", "Init failed: " + (err?.message || err));
       }
     }
     initRealtime();
   </script>
-</body>
-</html>
+</b
