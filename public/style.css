@@ -5,77 +5,60 @@ body {
 }
 
 .app { text-align:center; max-width:600px; }
-.demo-label { font-size:12px; color:#111; margin-bottom:4px; }
 h1 { margin:6px 0; font-size:22px; }
+.demo-label { font-size:0.8rem; font-weight:normal; opacity:0.6; }
 
 #pttBtn {
-  width:120px; height:120px; border-radius:50%; border:none; cursor:pointer;
-  background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
-  box-shadow:0 6px 18px rgba(37,99,235,.3);
-  transition: transform 0.15s ease, box-shadow 0.3s ease;
   position: relative;
-  overflow: visible;
+  width:130px; height:130px;
+  border-radius:50%; border:none; cursor:pointer;
+  background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 18px rgba(37,99,235,.3);
+  overflow:hidden;
 }
-#pttBtn:hover { transform: scale(1.02); }
-#pttBtn:active { transform: scale(0.95); }
 
-/* Crisp outer ring */
-#pttBtn.speaking::after {
-  content:"";
+.button-label {
+  font-size:0.7rem;
+  opacity:0.5;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  transition:opacity 0.3s ease;
+  z-index:2;
+}
+
+.halo-container {
+  position:absolute; inset:0;
+  display:grid; place-items:center;
+  opacity:0;
+  pointer-events:none;
+}
+
+#pttBtn.speaking .halo-container { opacity:1; }
+
+.halo-container .halo {
   position:absolute;
-  inset:-10px;
+  width:100%; height:100%;
   border-radius:50%;
-  border:4px solid rgba(59,130,246,0.75);
-  animation: pulseRing 1.2s ease-in-out infinite;
-  z-index: 2;
+  border:3px solid rgba(59, 130, 246, 0.5);
+  animation: halo-pulse 1.8s infinite ease-out;
+  opacity:0;
 }
 
-/* Softer blurred inner halo */
-#pttBtn.speaking::before {
-  content:"";
-  position:absolute;
-  inset:-5px;
-  border-radius:50%;
-  box-shadow: 0 0 25px 10px rgba(59,130,246,0.25);
-  animation: softGlow 2s ease-in-out infinite;
-  z-index: 1;
-}
+.halo-container .halo:nth-child(2) { animation-delay:0.15s; }
+.halo-container .halo:nth-child(3) { animation-delay:0.3s; }
+.halo-container .halo:nth-child(4) { animation-delay:0.45s; }
+.halo-container .halo:nth-child(5) { animation-delay:0.6s; }
+.halo-container .halo:nth-child(6) { animation-delay:0.75s; }
+.halo-container .halo:nth-child(7) { animation-delay:0.9s; }
+.halo-container .halo:nth-child(8) { animation-delay:1.05s; }
+.halo-container .halo:nth-child(9) { animation-delay:1.2s; }
+.halo-container .halo:nth-child(10) { animation-delay:1.35s; }
 
-/* Extra trailing glow layer */
-#pttBtn.speaking .trail {
-  content:"";
-  position:absolute;
-  inset:-18px;
-  border-radius:50%;
-  border:3px solid rgba(59,130,246,0.25);
-  animation: pulseTrail 2.4s ease-in-out infinite;
-  z-index: 0;
-}
-
-@keyframes pulseRing {
-  0%   { transform: scale(1); opacity: 1; }
-  70%  { transform: scale(1.25); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
-}
-
-@keyframes softGlow {
-  0%   { opacity: 0.3; }
-  50%  { opacity: 0.6; }
-  100% { opacity: 0.3; }
-}
-
-@keyframes pulseTrail {
-  0%   { transform: scale(1); opacity: 0.5; }
-  70%  { transform: scale(1.35); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
-}
-
-/* Faint instruction */
-.hint {
-  margin-top:8px;
-  font-size:0.85rem;
-  color:rgba(255,255,255,0.4);
-  text-shadow:0 0 6px rgba(30,58,138,0.6);
+@keyframes halo-pulse {
+  0% { transform:scale(1); opacity:0.7; }
+  50% { transform:scale(1.5); opacity:0.3; }
+  100% { transform:scale(2); opacity:0; }
 }
 
 #answer {
