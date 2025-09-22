@@ -1,4 +1,4 @@
-import "dotenv/config";
+// No dotenv. Reads OPENAI_API_KEY directly from Render env.
 import express from "express";
 
 const app = express();
@@ -7,8 +7,7 @@ app.use(express.static("public"));
 app.post("/session", async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
-      console.error("❌ Missing OPENAI_API_KEY on server");
-      return res.status(500).json({ error: "Missing API key on server" });
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY on server" });
     }
 
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -16,7 +15,7 @@ app.post("/session", async (req, res) => {
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
-        "OpenAI-Beta": "realtime=v1"
+        "OpenAI-Beta": "realtime=v1" // 🔑 required
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
@@ -27,18 +26,17 @@ app.post("/session", async (req, res) => {
 
     const data = await r.json();
     if (!r.ok) {
-      console.error("❌ Session API failed:", data);
+      // Surface the exact OpenAI error to the browser so we don't guess.
       return res.status(r.status).json(data);
     }
 
-    console.log("✅ Session created");
+    // Return only what the client needs.
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
       voice: "alloy"
     });
   } catch (e) {
-    console.error("Session error:", e);
     res.status(500).json({ error: "session failed" });
   }
 });
