@@ -44,29 +44,11 @@
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    function setSpeaking(on) {
-      if (on) pttBtn.classList.add('speaking');
-      else pttBtn.classList.remove('speaking');
-    }
-
     async function initRealtime() {
       try {
-        console.log("🔑 Fetching session from server...");
         const s = await fetch("/session", { method:"POST" });
-        console.log("📥 /session response status:", s.status);
-        const sessionData = await s.json();
-        console.log("🔧 Session response:", sessionData);
-
-        if (!s.ok) {
-          appendLine("ai", `Session error: ${sessionData?.error || "unknown error"}`);
-          return;
-        }
-
-        const { client_secret, model, voice } = sessionData;
-        if (!client_secret) {
-          appendLine("ai", "No client_secret returned from server.");
-          return;
-        }
+        const { client_secret, model, voice } = await s.json();
+        if (!client_secret) return;
 
         const pc = new RTCPeerConnection();
 
@@ -74,6 +56,7 @@
           const remoteStream = ev.streams[0];
           rtAudio.srcObject = remoteStream;
 
+          // 🎯 Tuned analyser for Halo
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const source = audioCtx.createMediaStreamSource(remoteStream);
           const analyser = audioCtx.createAnalyser();
@@ -91,15 +74,15 @@
             const rms = Math.sqrt(sum / dataArray.length);
             const now = performance.now();
 
-            if (rms > 0.01) {
+            if (rms > 0.01) {  // lower for more sensitivity
               lastAbove = now;
               if (!aiSpeaking) {
                 aiSpeaking = true;
-                setSpeaking(true);
+                pttBtn.classList.add('speaking');
               }
             } else if (aiSpeaking && now - lastAbove > 500) {
               aiSpeaking = false;
-              setSpeaking(false);
+              pttBtn.classList.remove('speaking');
             }
             requestAnimationFrame(monitor);
           }
@@ -108,25 +91,16 @@
 
         pc.ondatachannel = (ev) => {
           const ch = ev.channel;
-          ch.onmessage = handleEventMessage;
+          ch.onmessage = (e) => {
+            try {
+              const evt = JSON.parse(e.data);
+              if (evt.type === "response.message.delta") {
+                const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+                if (chunk) appendLine("ai", chunk);
+              }
+            } catch(err) { console.error("Parse error:", e.data, err); }
+          };
         };
-
-        const dc = pc.createDataChannel("events");
-        dc.onmessage = handleEventMessage;
-
-        function handleEventMessage(e){
-          try {
-            const evt = JSON.parse(e.data);
-            if (evt.type === "response.message.delta") {
-              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              if (chunk) appendLine("ai", chunk);
-            }
-            if (evt.type === "response.audio_transcript.delta") {
-              const transcript = evt.delta.map(d => d.text || "").join("");
-              if (transcript) appendLine("me", transcript);
-            }
-          } catch(err) { console.error("Parse error:", e.data, err); }
-        }
 
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
         const micTrack = mic.getTracks()[0];
@@ -136,7 +110,6 @@
         const offer = await pc.createOffer({ offerToReceiveAudio:true });
         await pc.setLocalDescription(offer);
 
-        console.log("🌐 Sending SDP offer to OpenAI...");
         const r = await fetch(
           `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
           {
@@ -150,29 +123,21 @@
           }
         );
 
-        console.log("📥 Realtime response status:", r.status);
-        if (!r.ok) {
-          appendLine("ai", `Realtime error ${r.status}: ${await r.text()}`);
-          return;
-        }
-
         const answer = { type:"answer", sdp: await r.text() };
-        console.log("🔧 SDP answer received, setting remote description...");
         await pc.setRemoteDescription(answer);
 
         let talking = false;
         pttBtn.onclick = () => {
           talking = !talking;
           micTrack.enabled = talking;
-          pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
           appendLine("me", talking ? "(Listening...)" : "(Stopped)");
         };
 
       } catch(err) {
-        console.error("💥 Init failed", err);
         appendLine("ai", "Init failed: " + (err?.message || err));
       }
     }
     initRealtime();
   </script>
-</b
+</body>
+</html>
