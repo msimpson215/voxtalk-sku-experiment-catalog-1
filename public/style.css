@@ -15,7 +15,6 @@ body {
   width:120px; height:120px; border-radius:50%; border:none; cursor:pointer;
   background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
   box-shadow:0 6px 18px rgba(37,99,235,.3);
-  transition: transform 0.15s ease, box-shadow 0.3s ease;
   position: relative;
   overflow: visible;
 }
@@ -31,7 +30,7 @@ body {
   opacity:0;
 }
 
-#pttBtn.speaking .ring { animation: ripple 1.8s ease-in-out infinite; }
+#pttBtn.speaking .ring { animation: ripple 2s ease-in-out infinite; }
 #pttBtn.speaking .ring:nth-child(1){ animation-delay: 0s; }
 #pttBtn.speaking .ring:nth-child(2){ animation-delay: 0.4s; }
 #pttBtn.speaking .ring:nth-child(3){ animation-delay: 0.8s; }
