@@ -2,60 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Talk to VoxTalk™</title>
+  <title>VoxTalk (Demo)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <h1 class="title">Talk to VoxTalk<span class="tm">™</span></h1>
+    <h1 class="demo-label">Demo</h1>
+    <h2 class="talk-label">Talk to VoxTalk™</h2>
 
-    <button id="pttBtn" aria-pressed="false">
-      <span class="button-label">Click to Talk</span>
-      <div class="halo-container">
-        <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-        <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-        <div class="halo"></div><div class="halo"></div><div class="halo"></div>
-        <div class="halo"></div>
-      </div>
-    </button>
+    <!-- Main Talk Button -->
+    <button id="pttBtn" aria-pressed="false"></button>
+    <div class="hint">Click to Talk</div>
 
-    <div id="answer" class="transcript-box">
-      <div class="muted">Conversation will appear here.</div>
-    </div>
+    <!-- Transcript Box -->
+    <div id="answer"></div>
 
+    <!-- Remote Audio -->
     <audio id="remote" autoplay playsinline></audio>
+
+    <p class="powered">Powered by VoxTalk™</p>
   </div>
 
-  <footer class="footer">
-    <span class="demo-watermark">DEMO</span>
-    Powered by VoxTalk<span class="tm">™</span>
-  </footer>
-
   <script>
-    const pttBtn = document.getElementById('pttBtn');
-    const buttonLabel = pttBtn.querySelector('.button-label');
+    const pttBtn   = document.getElementById('pttBtn');
     const answerEl = document.getElementById('answer');
-    const rtAudio = document.getElementById('remote');
-    let firstClick = true;
+    const rtAudio  = document.getElementById('remote');
 
     function appendLine(role, text) {
-      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
       const div = document.createElement('div');
       div.className = 'line';
-      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'VoxTalk:'}</span>
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
                        <span class="text">${text}</span>`;
       answerEl.appendChild(div);
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    function setSpeaking(on) {
-      if (on) {
-        pttBtn.classList.remove('speaking');
-        void pttBtn.offsetWidth;
-      }
-      pttBtn.classList.toggle('speaking', on);
-      if (!firstClick) buttonLabel.style.opacity = on ? "0" : "0.5";
+    function setSpeaking(on) { 
+      pttBtn.classList.toggle('speaking', on); 
     }
 
     async function initRealtime() {
@@ -63,13 +47,18 @@
         const s = await fetch("/session", { method:"POST" });
         const sessionData = await s.json();
 
-        console.log("🔧 Session data received:", sessionData);
-        if (!sessionData.client_secret) {
-          console.error("❌ No client_secret in session data");
+        if (!s.ok) {
+          console.error("❌ /session failed:", sessionData);
+          appendLine("ai", `Session error: ${sessionData?.error || "unknown error"}`);
           return;
         }
 
-        const clientSecret = sessionData.client_secret;
+        const { client_secret, model, voice } = sessionData;
+        console.log("🔑 Client secret received:", client_secret); // ✅ log handoff
+        if (!client_secret) {
+          appendLine("ai", "No client_secret returned from server.");
+          return;
+        }
 
         const pc = new RTCPeerConnection();
         const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
@@ -79,7 +68,6 @@
 
         pc.ontrack = (ev)=> {
           rtAudio.srcObject = ev.streams[0];
-          rtAudio.play().catch(()=>{});
         };
 
         const dc = pc.createDataChannel("events");
@@ -90,8 +78,8 @@
               const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
               if (chunk) appendLine("ai", chunk);
             }
-            if (evt.type === "response.audio.start") setSpeaking(true);
-            if (evt.type === "response.audio.end" || evt.type === "output_audio_buffer.stopped") setSpeaking(false);
+            if (evt.type === "response.audio_transcript.delta") setSpeaking(true);
+            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") setSpeaking(false);
           } catch(err) { console.error("Parse error:", e.data, err); }
         };
 
@@ -99,39 +87,46 @@
         await pc.setLocalDescription(offer);
 
         const r = await fetch(
-          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(sessionData.model)}&voice=${sessionData.voice}`,
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
           {
             method:"POST",
             headers: {
-              "Authorization":`Bearer ${clientSecret}`,
-              "Content-Type":"application/sdp"
+              "Authorization":`Bearer ${client_secret.value || client_secret}`,
+              "Content-Type":"application/sdp",
+              "OpenAI-Beta": "realtime=v1" // ✅ required header
             },
             body: offer.sdp
           }
         );
+
+        if (!r.ok) {
+          const errText = await r.text();
+          console.error("❌ Realtime SDP fetch failed:", r.status, errText);
+          appendLine("ai", `Realtime error ${r.status}: ${errText.substring(0,200)}`);
+          return;
+        }
+
         const answer = { type:"answer", sdp: await r.text() };
+        if (!answer.sdp || !answer.sdp.startsWith("v=")) {
+          console.error("❌ Invalid SDP answer:", answer.sdp);
+          appendLine("ai", "Invalid SDP received from server.");
+          return;
+        }
+
         await pc.setRemoteDescription(answer);
 
         let talking = false;
         pttBtn.onclick = () => {
-          if (firstClick) {
-            buttonLabel.style.opacity = 0;
-            firstClick = false;
-          }
           talking = !talking;
           micTrack.enabled = talking;
-          if (talking) {
-            appendLine("me","(Listening...)");
-          } else {
-            appendLine("me","(Stopped)");
-            setSpeaking(false);
-            rtAudio.pause();
-            rtAudio.currentTime = 0;
-          }
+          pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
+          appendLine("me", talking ? "(Listening...)" : "(Stopped)");
+          setSpeaking(talking);
         };
 
       } catch(err) {
         console.error("Realtime init failed", err);
+        appendLine("ai", "Init failed: " + (err?.message || err));
       }
     }
     initRealtime();
