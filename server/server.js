@@ -13,15 +13,20 @@ app.post("/session", async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
-        voice: "nova",
+        voice: "nova", // Nova is upbeat and friendly
         instructions:
           "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
       })
     });
 
     const data = await r.json();
+    if (!data.client_secret) {
+      console.error("❌ OpenAI returned no client_secret:", data);
+      return res.status(500).json({ error: "No client_secret from OpenAI" });
+    }
+
     res.json({
-      client_secret: data.client_secret,
+      client_secret: data.client_secret, // Pass full object
       model: "gpt-4o-realtime-preview",
       voice: "nova"
     });
@@ -32,4 +37,4 @@ app.post("/session", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on " + PORT));
+app.listen(PORT, () => console.log("✅ Server running on " + PORT));
