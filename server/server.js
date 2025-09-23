@@ -1,4 +1,3 @@
-// No dotenv. Reads OPENAI_API_KEY directly from Render env.
 import express from "express";
 
 const app = express();
@@ -6,6 +5,18 @@ app.use(express.static("public"));
 
 app.post("/session", async (req, res) => {
   try {
+    // DEV_MODE: Simulate a session response for safe local testing
+    if (process.env.DEV_MODE === "true") {
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      return res.json({
+        client_secret: { value: "fake-secret", expires_at: expiresAt },
+        model: "gpt-4o-realtime-preview",
+        voice: "alloy",
+        dev_mode: true
+      });
+    }
+
+    // REAL MODE: Requires OPENAI_API_KEY set in Render environment
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: "Missing OPENAI_API_KEY on server" });
     }
@@ -15,26 +26,24 @@ app.post("/session", async (req, res) => {
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
-        "OpenAI-Beta": "realtime=v1" // 🔑 required
+        "OpenAI-Beta": "realtime=v1"
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        instructions: "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
+        instructions:
+          "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
       })
     });
 
     const data = await r.json();
-    if (!r.ok) {
-      // Surface the exact OpenAI error to the browser so we don't guess.
-      return res.status(r.status).json(data);
-    }
+    if (!r.ok) return res.status(r.status).json(data);
 
-    // Return only what the client needs.
     res.json({
       client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy"
+      voice: "alloy",
+      dev_mode: false
     });
   } catch (e) {
     res.status(500).json({ error: "session failed" });
