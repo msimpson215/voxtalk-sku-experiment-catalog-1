@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Banner for DEV_MODE -->
+  <!-- Yellow banner for DEV_MODE -->
   <div id="banner" style="display:none; background: yellow; color: black; padding: 8px; text-align: center; font-weight: bold;">
     ⚠ TEST MODE — No real OpenAI calls
   </div>
@@ -25,13 +25,12 @@
         const response = await fetch("/session", { method: "POST" });
         const data = await response.json();
 
-        // Show banner if server indicates dev_mode
+        // Show banner if in DEV_MODE
         if (data.dev_mode) {
           document.getElementById("banner").style.display = "block";
           console.log("⚠ Running in DEV_MODE - no real OpenAI calls.");
         }
 
-        // Example: attach halos/transcript behavior
         const talkButton = document.getElementById("talkButton");
         talkButton.addEventListener("click", () => {
           if (data.dev_mode) {
@@ -40,7 +39,6 @@
             startRealtimeSession(data.client_secret.value, data.model, data.voice);
           }
         });
-
       } catch (e) {
         console.error("Failed to initialize VoxTalk session", e);
       }
@@ -57,7 +55,7 @@
 
     function startRealtimeSession(clientSecret, model, voice) {
       console.log("Starting real OpenAI session with:", model, voice);
-      // Your existing WebSocket + Audio code goes here
+      // Real WebSocket/audio code here
     }
 
     init();
