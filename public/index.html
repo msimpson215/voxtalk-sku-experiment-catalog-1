@@ -1,71 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VoxTalk Demo</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="utf-8" />
+  <title>VoxTalk Multi-Modal Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Yellow banner -->
-  <div id="banner" class="banner">⚠ TEST MODE — No real OpenAI calls</div>
+  <div class="container">
+    <h1>Talk to VoxTalk</h1>
+    <button id="talk-button">Click to Talk</button>
+    <button id="stop-button">Stop</button>
 
-  <main>
-    <h1 class="title">VoxTalk</h1>
-    <div class="halo-container">
-      <button id="talkButton" class="talk-button">🎙 Talk</button>
-      <div class="halo" id="halo"></div>
-    </div>
-    <div id="transcriptBox" class="transcript-box"></div>
-    <div id="modeLabel" class="mode-label"></div>
-    <footer class="footer">Powered by VoxTalk</footer>
-  </main>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <div id="product-card"></div>
 
-  <script>
-    async function init() {
-      try {
-        const qs = window.location.search || "";
-        const response = await fetch("/session" + qs, { method: "POST" });
-        const data = await response.json();
+    <audio id="remote" autoplay playsinline></audio>
+  </div>
 
-        // Banner + mode label
-        if (data.dev_mode) {
-          document.getElementById("banner").style.display = "block";
-          console.log("⚠ Running in DEV_MODE - no real OpenAI calls.");
-        } else {
-          document.getElementById("banner").style.display = "none";
-          console.log("Starting real OpenAI session with:", data.model, data.voice);
-        }
-        document.getElementById("modeLabel").textContent = data.dev_mode ? "MODE: DEV" : "MODE: REAL";
-
-        const talkButton = document.getElementById("talkButton");
-        talkButton.addEventListener("click", () => {
-          if (data.dev_mode) {
-            simulateLocalResponse();
-          } else {
-            startRealtimeSession(data.client_secret.value, data.model, data.voice);
-          }
-        });
-      } catch (e) {
-        console.error("Failed to initialize VoxTalk session", e);
-      }
-    }
-
-    function simulateLocalResponse() {
-      const halo = document.getElementById("halo");
-      halo.classList.add("pulse");
-      const transcriptBox = document.getElementById("transcriptBox");
-      transcriptBox.innerHTML =
-        "<p><strong>Fake AI:</strong> Hello! This is a simulated response in DEV_MODE.</p>";
-      setTimeout(() => halo.classList.remove("pulse"), 2000);
-    }
-
-    function startRealtimeSession(clientSecret, model, voice) {
-      console.log("Would start real session:", model, voice, clientSecret);
-      // Place real WebSocket/audio logic here
-    }
-
-    init();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
