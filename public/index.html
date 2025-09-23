@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VoxTalk Demo</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <!-- Yellow banner for DEV_MODE -->
-  <div id="banner" style="display:none; background: yellow; color: black; padding: 8px; text-align: center; font-weight: bold;">
+  <!-- DEV banner -->
+  <div id="banner" style="display:none;background:yellow;color:black;padding:8px;text-align:center;font-weight:bold;">
     ⚠ TEST MODE — No real OpenAI calls
   </div>
 
@@ -17,27 +17,32 @@
     <button id="talkButton" class="talk-button">Talk</button>
     <div id="halos" class="halos"></div>
     <div id="transcriptBox" class="transcript-box"></div>
+    <div id="modeLabel" class="mode-label"></div>
   </main>
 
   <script>
     async function init() {
       try {
-        const response = await fetch("/session", { method: "POST" });
+        const qs = window.location.search || "";
+        const response = await fetch("/session" + qs, { method: "POST" });
         const data = await response.json();
 
-        // Show banner if in DEV_MODE
+        // Mode indicator
+        const modeLabel = document.getElementById("modeLabel");
+        modeLabel.textContent = data.dev_mode ? "MODE: DEV" : "MODE: REAL";
+
+        // Show banner if in DEV
         if (data.dev_mode) {
           document.getElementById("banner").style.display = "block";
           console.log("⚠ Running in DEV_MODE - no real OpenAI calls.");
+        } else {
+          console.log("Starting real OpenAI session with:", data.model, data.voice);
         }
 
         const talkButton = document.getElementById("talkButton");
         talkButton.addEventListener("click", () => {
-          if (data.dev_mode) {
-            simulateLocalResponse();
-          } else {
-            startRealtimeSession(data.client_secret.value, data.model, data.voice);
-          }
+          if (data.dev_mode) simulateLocalResponse();
+          else startRealtimeSession(data.client_secret.value, data.model, data.voice);
         });
       } catch (e) {
         console.error("Failed to initialize VoxTalk session", e);
@@ -46,7 +51,8 @@
 
     function simulateLocalResponse() {
       const transcriptBox = document.getElementById("transcriptBox");
-      transcriptBox.innerHTML = "<p><strong>Fake AI:</strong> Hello! This is a simulated response in DEV_MODE.</p>";
+      transcriptBox.innerHTML =
+        "<p><strong>Fake AI:</strong> Hello! This is a simulated response in DEV_MODE.</p>";
 
       const halos = document.getElementById("halos");
       halos.classList.add("pulse");
@@ -54,8 +60,8 @@
     }
 
     function startRealtimeSession(clientSecret, model, voice) {
-      console.log("Starting real OpenAI session with:", model, voice);
-      // Real WebSocket/audio code here
+      // Your real WebSocket/audio init goes here
+      console.log("Realtime session would start here.", { clientSecret, model, voice });
     }
 
     init();
