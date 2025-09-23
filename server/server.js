@@ -1,11 +1,10 @@
 import express from "express";
-
 const app = express();
 app.use(express.static("public"));
 
 app.post("/session", async (req, res) => {
   try {
-    // DEV_MODE: Simulate a session response for safe local testing
+    // ✅ Return fake session if DEV_MODE=true
     if (process.env.DEV_MODE === "true") {
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       return res.json({
@@ -16,9 +15,9 @@ app.post("/session", async (req, res) => {
       });
     }
 
-    // REAL MODE: Requires OPENAI_API_KEY set in Render environment
+    // ✅ Real mode: hit OpenAI Realtime API
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY on server" });
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
     }
 
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -31,8 +30,7 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        instructions:
-          "You are VoxTalk, an AI voice assistant. Always respond in English. Keep an upbeat, friendly tone."
+        instructions: "You are VoxTalk, an upbeat AI assistant. Respond in English."
       })
     });
 
@@ -46,6 +44,7 @@ app.post("/session", async (req, res) => {
       dev_mode: false
     });
   } catch (e) {
+    console.error("Session error:", e);
     res.status(500).json({ error: "session failed" });
   }
 });
