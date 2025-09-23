@@ -1,5 +1,5 @@
 import express from "express";
-import fetch from "node-fetch"; // make sure installed with `npm install node-fetch`
+import fetch from "node-fetch";
 
 const app = express();
 app.use(express.static("public"));
