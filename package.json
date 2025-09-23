@@ -1,14 +1,8 @@
-{
-  "name": "voxtalk-realtime-demo",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node server/server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2"
-  },
-  "engines": {
-    "node": ">=18"
-  }
-}
+node_modules
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
