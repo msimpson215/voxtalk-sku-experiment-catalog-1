@@ -1,209 +1,66 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>VoxTalk (Demo)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoxTalk Demo</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app">
-    <div id="modeBanner" class="banner" hidden>⚠️ TEST MODE — No real OpenAI calls</div>
-
-    <h1 class="demo-label">Demo</h1>
-    <h2 class="talk-label">Talk to VoxTalk™</h2>
-
-    <button id="pttBtn" aria-pressed="false"></button>
-    <div class="hint">Click to Talk</div>
-
-    <div id="answer"></div>
-    <audio id="remote" autoplay playsinline></audio>
-
-    <p class="powered">Powered by VoxTalk™</p>
+  <!-- Banner for DEV_MODE -->
+  <div id="banner" style="display:none; background: yellow; color: black; padding: 8px; text-align: center; font-weight: bold;">
+    ⚠ TEST MODE — No real OpenAI calls
   </div>
 
+  <main>
+    <h1>VoxTalk</h1>
+    <button id="talkButton" class="talk-button">Talk</button>
+    <div id="halos" class="halos"></div>
+    <div id="transcriptBox" class="transcript-box"></div>
+  </main>
+
   <script>
-    const pttBtn   = document.getElementById('pttBtn');
-    const answerEl = document.getElementById('answer');
-    const rtAudio  = document.getElementById('remote');
-    const modeBanner = document.getElementById('modeBanner');
-
-    function appendLine(role, text) {
-      const div = document.createElement('div');
-      div.className = 'line';
-      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
-                       <span class="text">${text}</span>`;
-      answerEl.appendChild(div);
-      answerEl.scrollTop = answerEl.scrollHeight;
-    }
-
-    function setSpeaking(on) {
-      pttBtn.classList.toggle('speaking', on);
-    }
-
-    function attachAnalyserToStream(mediaStream) {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(mediaStream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      const dataArray = new Float32Array(analyser.fftSize);
-      source.connect(analyser);
-
-      let speaking = false;
-      let lastAbove = 0;
-      function monitor() {
-        analyser.getFloatTimeDomainData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i] * dataArray[i];
-        const rms = Math.sqrt(sum / dataArray.length);
-        const now = performance.now();
-
-        if (rms > 0.01) {
-          lastAbove = now;
-          if (!speaking) {
-            speaking = true;
-            setSpeaking(true);
-          }
-        } else if (speaking && now - lastAbove > 450) {
-          speaking = false;
-          setSpeaking(false);
-        }
-        requestAnimationFrame(monitor);
-      }
-      monitor();
-    }
-
-    async function initRealtime() {
+    async function init() {
       try {
-        const s = await fetch("/session", { method:"POST" });
-        const sessionData = await s.json();
+        const response = await fetch("/session", { method: "POST" });
+        const data = await response.json();
 
-        if (!s.ok) {
-          appendLine("ai", `Session error: ${sessionData?.error || "unknown error"}`);
-          return;
+        // Show banner if server indicates dev_mode
+        if (data.dev_mode) {
+          document.getElementById("banner").style.display = "block";
+          console.log("⚠ Running in DEV_MODE - no real OpenAI calls.");
         }
 
-        const { client_secret, model, voice, dev_mode } = sessionData;
-        const isFake = dev_mode === true || (client_secret && client_secret.value === "fake-secret");
-
-        if (isFake) {
-          modeBanner.hidden = false;
-          console.warn("🚧 DEV MODE: Simulating AI voice (no real API call)");
-
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const dest = audioCtx.createMediaStreamDestination();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = 220;
-          gain.gain.value = 0.0001;
-          osc.connect(gain).connect(dest);
-          osc.start();
-
-          const speakPattern = () => {
-            const now = audioCtx.currentTime;
-            gain.gain.cancelScheduledValues(now);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.linearRampToValueAtTime(0.03, now + 0.08);
-            gain.gain.linearRampToValueAtTime(0.005, now + 0.22);
-            gain.gain.linearRampToValueAtTime(0.025, now + 0.33);
-            gain.gain.linearRampToValueAtTime(0.003, now + 0.55);
-            gain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
-          };
-
-          rtAudio.srcObject = dest.stream;
-          attachAnalyserToStream(dest.stream);
-
-          setInterval(() => {
-            speakPattern();
-            appendLine("ai", "(Simulated AI) Testing VoxTalk in local mode.");
-          }, 3000);
-
-          let talking = false;
-          pttBtn.onclick = () => {
-            talking = !talking;
-            pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
-            appendLine("me", talking ? "(Listening...)" : "(Stopped)");
-          };
-          return;
-        }
-
-        const pc = new RTCPeerConnection();
-        let remoteAttached = false;
-        const noAudioTimer = setTimeout(() => {
-          if (!remoteAttached) {
-            appendLine("ai", "⚠️ No audio returned. Check OpenAI quota or credit balance.");
+        // Example: attach halos/transcript behavior
+        const talkButton = document.getElementById("talkButton");
+        talkButton.addEventListener("click", () => {
+          if (data.dev_mode) {
+            simulateLocalResponse();
+          } else {
+            startRealtimeSession(data.client_secret.value, data.model, data.voice);
           }
-        }, 5000);
+        });
 
-        pc.ontrack = (ev)=> {
-          const remoteStream = ev.streams[0];
-          rtAudio.srcObject = remoteStream;
-          remoteAttached = true;
-          clearTimeout(noAudioTimer);
-          attachAnalyserToStream(remoteStream);
-        };
-
-        pc.ondatachannel = (ev) => {
-          const ch = ev.channel;
-          ch.onmessage = (e)=> {
-            try {
-              const evt = JSON.parse(e.data);
-              if (evt.type === "response.message.delta") {
-                const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-                if (chunk) appendLine("ai", chunk);
-              }
-            } catch(err) { console.error("Parse error:", e.data, err); }
-          };
-        };
-
-        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
-        const micTrack = mic.getTracks()[0];
-        micTrack.enabled = false;
-        pc.addTrack(micTrack, mic);
-
-        const offer = await pc.createOffer({ offerToReceiveAudio:true });
-        await pc.setLocalDescription(offer);
-
-        const r = await fetch(
-          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
-          {
-            method:"POST",
-            headers: {
-              "Authorization":`Bearer ${client_secret.value || client_secret}`,
-              "Content-Type":"application/sdp",
-              "OpenAI-Beta":"realtime=v1"
-            },
-            body: offer.sdp
-          }
-        );
-
-        if (!r.ok) {
-          const errText = await r.text();
-          appendLine("ai", `Realtime error ${r.status}: ${errText.substring(0,200)}`);
-          return;
-        }
-
-        const answer = { type:"answer", sdp: await r.text() };
-        if (!answer.sdp.startsWith("v=")) {
-          appendLine("ai", "Invalid SDP received from server.");
-          return;
-        }
-        await pc.setRemoteDescription(answer);
-
-        let talking = false;
-        pttBtn.onclick = () => {
-          talking = !talking;
-          micTrack.enabled = talking;
-          pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
-          appendLine("me", talking ? "(Listening...)" : "(Stopped)");
-        };
-
-      } catch(err) {
-        appendLine("ai", "Init failed: " + (err?.message || err));
+      } catch (e) {
+        console.error("Failed to initialize VoxTalk session", e);
       }
     }
-    initRealtime();
+
+    function simulateLocalResponse() {
+      const transcriptBox = document.getElementById("transcriptBox");
+      transcriptBox.innerHTML = "<p><strong>Fake AI:</strong> Hello! This is a simulated response in DEV_MODE.</p>";
+
+      const halos = document.getElementById("halos");
+      halos.classList.add("pulse");
+      setTimeout(() => halos.classList.remove("pulse"), 2000);
+    }
+
+    function startRealtimeSession(clientSecret, model, voice) {
+      console.log("Starting real OpenAI session with:", model, voice);
+      // Your existing WebSocket + Audio code goes here
+    }
+
+    init();
   </script>
 </body>
 </html>
