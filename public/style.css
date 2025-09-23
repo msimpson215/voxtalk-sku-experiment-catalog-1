@@ -11,6 +11,17 @@ body {
 .demo-label { font-size:14px; font-weight:600; color:black; margin-bottom:4px; }
 .talk-label { margin:6px 0; font-size:22px; color:black; }
 
+.banner {
+  background: #facc15;
+  color: #111827;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 8px auto 10px;
+  width: fit-content;
+}
+
 #pttBtn {
   width:120px; height:120px; border-radius:50%; border:none; cursor:pointer;
   background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
