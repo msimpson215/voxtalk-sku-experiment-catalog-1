@@ -6,8 +6,8 @@ let ws;
 let isRecording = false;
 let textBuffer = "";
 
-// Start/Stop toggle
-talkButton.addEventListener("click", async () => {
+// Toggle button
+talkButton.addEventListener("click", () => {
   if (isRecording) {
     stopRecording();
   } else {
@@ -20,7 +20,7 @@ async function startRecording() {
   answerBox.innerHTML += `<p><em>Listening...</em></p>`;
   isRecording = true;
 
-  // Request session from server
+  // Get session
   const resp = await fetch("/session", { method: "POST" });
   const { client_secret, model } = await resp.json();
 
@@ -34,7 +34,13 @@ async function startRecording() {
     console.log("Realtime connected");
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      mediaRecorder.ondataavailable = (e) => ws.send(e.data);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(e.data);
+        }
+      };
+
       mediaRecorder.start(250);
     });
   };
@@ -54,17 +60,34 @@ async function startRecording() {
         break;
     }
   };
+
+  ws.onclose = () => {
+    console.log("WebSocket closed");
+    cleanupMedia();
+  };
+
+  ws.onerror = (err) => {
+    console.error("WebSocket error:", err);
+    cleanupMedia();
+  };
 }
 
 function stopRecording() {
   talkButton.classList.remove("speaking");
   isRecording = false;
-  if (mediaRecorder) mediaRecorder.stop();
-  if (ws) ws.close();
+  cleanupMedia();
+  if (ws && ws.readyState === WebSocket.OPEN) ws.close();
   answerBox.innerHTML += `<p><em>Stopped</em></p>`;
 }
 
-// Append text and detect product cards
+function cleanupMedia() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+  mediaRecorder = null;
+}
+
+// Append transcript or product card
 function renderText(text) {
   try {
     const parsed = JSON.parse(text);
@@ -85,7 +108,7 @@ function renderText(text) {
   }
 }
 
-// Play audio stream
+// Play audio
 function playAudio(base64Data) {
   const audio = new Audio("data:audio/opus;base64," + base64Data);
   audio.play();
