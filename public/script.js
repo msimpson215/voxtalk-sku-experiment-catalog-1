@@ -33,7 +33,7 @@ function connectWS() {
           }
         }));
 
-        // 🔑 Send a test message immediately so connection stays alive
+        // Send test message immediately
         ws.send(JSON.stringify({
           type: "response.create",
           response: {
@@ -43,17 +43,29 @@ function connectWS() {
         }));
       };
 
-      ws.onmessage = onMessage;
+      // 🔔 Log every single raw event so we can see errors or completions
+      ws.onmessage = (ev) => {
+        console.log("🔔 RAW EVENT:", ev.data);
+        onMessage(ev);
+      };
+
       ws.onerror = (e) => console.error("❌ WS error:", e);
-      ws.onclose = () => console.log("🔌 WS closed");
+      ws.onclose = (e) => console.log("🔌 WS closed", e);
     })
     .catch(err => console.error("Session fetch error:", err));
 }
 
 function onMessage(ev) {
   const msg = typeof ev.data === "string" ? JSON.parse(ev.data) : null;
-  if (msg?.type === "output_text.delta") appendTranscript("VoxTalk", msg.delta);
-  if (msg?.type === "output_audio.delta") playAudioChunk(msg.delta);
+  if (!msg) return;
+
+  if (msg.type === "output_text.delta") appendTranscript("VoxTalk", msg.delta);
+  if (msg.type === "output_audio.delta") playAudioChunk(msg.delta);
+
+  if (msg.type === "response.error") {
+    console.error("🚨 OpenAI Response Error:", msg);
+    appendTranscript("System", `<span style="color:red;">Error: ${msg.error?.message || "Unknown"}</span>`);
+  }
 }
 
 function playAudioChunk(base64Data) {
@@ -67,72 +79,4 @@ function playAudioChunk(base64Data) {
   });
 }
 
-function appendTranscript(speaker, text) {
-  transcriptEl.innerHTML += `<div><b>${speaker}:</b> ${text}</div>`;
-  transcriptEl.scrollTop = transcriptEl.scrollHeight;
-}
-
-async function toggleRecording() {
-  if (!isRecording) {
-    await startRecording();
-  } else {
-    stopRecording();
-  }
-}
-
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(audioChunks, { type: "audio/webm" });
-      blob.arrayBuffer().then(buf => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: "input_audio_buffer.append",
-            audio: arrayBufferToBase64(buf)
-          }));
-          ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-          ws.send(JSON.stringify({
-            type: "response.create",
-            response: {
-              modalities: ["audio", "text"],
-              instructions: "Speak a short summary and also return text output with any URLs."
-            }
-          }));
-        } else {
-          console.error("WS not open when trying to send audio.");
-        }
-      });
-    };
-
-    mediaRecorder.start();
-    appendTranscript("You", "<i>Listening...</i>");
-    isRecording = true;
-    talkBtn.textContent = "🛑 Stop";
-  } catch (err) {
-    console.error("Mic error:", err);
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-  isRecording = false;
-  talkBtn.textContent = "🎙️ Talk / Stop";
-}
-
-function arrayBufferToBase64(buffer) {
-  let binary = "";
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-connectWS();
-talkBtn.addEventListener("click", toggleRecording);
+function appendTran
