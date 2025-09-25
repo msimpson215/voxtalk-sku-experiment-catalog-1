@@ -1,23 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>VoxTalk Multi-Modal Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VoxTalk</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <div class="container">
-    <h1>Talk to VoxTalk</h1>
-    <button id="talk-button">Click to Talk</button>
-    <button id="stop-button">Stop</button>
-
-    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
-    <div id="product-card"></div>
-
-    <audio id="remote" autoplay playsinline></audio>
+    <button id="talk-button">
+      <span class="label">Click to Talk</span>
+      <div class="halo"></div>
+      <div class="halo"></div>
+      <div class="halo"></div>
+    </button>
+    <div id="answer"></div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
