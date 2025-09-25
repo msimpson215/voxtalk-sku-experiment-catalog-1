@@ -6,7 +6,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// POST /session -> create OpenAI Realtime session
+// ✅ Return the FULL session JSON (includes proper wss://api.openai.com URL)
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -29,9 +29,10 @@ app.post("/session", async (req, res) => {
     }
 
     const json = await r.json();
-    res.json(json);
+    console.log("✅ OpenAI session response:", json); // now you SEE what you get
+    res.json(json); // ✅ send entire object back (not just ek_ token)
   } catch (err) {
-    console.error("Session error:", err);
+    console.error("❌ Session error:", err);
     res.status(500).send("Error creating session");
   }
 });
@@ -39,4 +40,4 @@ app.post("/session", async (req, res) => {
 app.use(express.static("public"));
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`VoxTalk running on ${port}`));
+app.listen(port, () => console.log(`VoxTalk running on port ${port}`));
