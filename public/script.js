@@ -1,71 +1,58 @@
-let pc, ws;
-const talkButton = document.getElementById("talk-button");
-const stopButton = document.getElementById("stop-button");
-const transcriptBox = document.getElementById("transcript-box");
+let ws;
+const sendQueue = [];
+const talkBtn = document.getElementById("talk-btn");
+const stopBtn = document.getElementById("stop-btn");
+const transcriptEl = document.getElementById("transcript");
+let speakingTimer;
 
-async function initRealtime() {
-  try {
-    const resp = await fetch("/session", { method: "POST" });
-    const data = await resp.json();
-    console.log("Session data:", data);
+function connectWS() {
+  fetch("/session", { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+      ws = new WebSocket(data.client_secret, ["realtime"]);
+      ws.onopen = () => {
+        while (sendQueue.length) ws.send(sendQueue.shift());
+      };
+      ws.onmessage = onMessage;
+    })
+    .catch(err => console.error("Session error:", err));
+}
 
-    if (data.error) {
-      transcriptBox.innerHTML = "Session error: " + JSON.stringify(data.error);
-      return;
-    }
+function safeSend(msg) {
+  const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(payload);
+  else sendQueue.push(payload);
+}
 
-    // --- WebRTC setup ---
-    pc = new RTCPeerConnection();
+function appendTextDelta(delta) {
+  transcriptEl.innerHTML += delta.replace(/\n/g, "<br>");
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
 
-    // Audio output
-    const audioEl = document.createElement("audio");
-    audioEl.autoplay = true;
-    pc.ontrack = (event) => {
-      audioEl.srcObject = event.streams[0];
-    };
-
-    // Mic input
-    const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
-    ms.getTracks().forEach((t) => pc.addTrack(t, ms));
-
-    // WebSocket signaling
-    ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${data.model}`, [
-      "realtime",
-      `openai-insecure-api-key.${data.client_secret.value}`,
-      "openai-beta.realtime-v1"
-    ]);
-
-    ws.onopen = async () => {
-      console.log("WebSocket connected");
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      ws.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
-    };
-
-    ws.onmessage = async (e) => {
-      const msg = JSON.parse(e.data);
-
-      if (msg.type === "answer") {
-        await pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
-      }
-
-      if (msg.type === "output_text.delta") {
-        transcriptBox.innerHTML += msg.delta;
-      }
-      if (msg.type === "output_text.completed") {
-        transcriptBox.innerHTML += "<br/>";
-      }
-    };
-
-    ws.onclose = () => console.log("WebSocket closed");
-  } catch (err) {
-    console.error("Realtime init failed", err);
-    transcriptBox.innerHTML = "Realtime init failed: " + err;
+function setSpeaking(on) {
+  if (on) {
+    talkBtn.classList.add("speaking");
+    clearTimeout(speakingTimer);
+    speakingTimer = setTimeout(() => talkBtn.classList.remove("speaking"), 600);
+  } else {
+    talkBtn.classList.remove("speaking");
   }
 }
 
-talkButton.onclick = () => initRealtime();
-stopButton.onclick = () => {
-  if (ws) ws.close();
-  if (pc) pc.close();
-};
+function onMessage(ev) {
+  const msg = JSON.parse(ev.data);
+  if (msg.type === "output_text.delta") appendTextDelta(msg.delta || "");
+  if (msg.type === "output_audio.delta") setSpeaking(true);
+  if (msg.type === "response.completed") setTimeout(() => setSpeaking(false), 250);
+}
+
+// --- Init ---
+connectWS();
+
+talkBtn.addEventListener("click", () => {
+  // start recording + safeSend chunks
+});
+
+stopBtn.addEventListener("click", () => {
+  // stop recording and close WS if needed
+});
