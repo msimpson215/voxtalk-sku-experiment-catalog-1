@@ -6,7 +6,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Create session with OpenAI
+// POST /session -> create OpenAI Realtime session
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -18,7 +18,7 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        modalities: ["audio","text"]
+        modalities: ["audio", "text"]
       })
     });
 
