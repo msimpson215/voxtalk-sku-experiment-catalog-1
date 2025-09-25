@@ -1,122 +1,69 @@
 const talkButton = document.getElementById("talk-button");
-const answerBox = document.getElementById("answer");
+const stopButton = document.getElementById("stop-button");
+const transcriptBox = document.getElementById("transcript");
 
-let mediaRecorder;
 let ws;
-let isRecording = false;
-let textBuffer = "";
+let mediaRecorder;
 
-// Toggle button
-talkButton.addEventListener("click", () => {
-  if (isRecording) {
-    stopRecording();
-  } else {
-    startRecording();
-  }
-});
-
-async function startRecording() {
-  talkButton.classList.add("speaking");
-  answerBox.innerHTML += `<p><em>Listening...</em></p>`;
-  isRecording = true;
-
-  // Get session
+async function initSession() {
   const resp = await fetch("/session", { method: "POST" });
-  const { client_secret, model } = await resp.json();
+  const data = await resp.json();
 
-  ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${model}`, [
+  ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${data.model}`, [
     "realtime",
-    "openai-insecure-api-key." + client_secret,
+    `openai-insecure-api-key.${data.client_secret.value}`,
     "openai-beta.realtime-v1"
   ]);
 
-  ws.onopen = () => {
-    console.log("Realtime connected");
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(e.data);
-        }
-      };
-
-      mediaRecorder.start(250);
-    });
-  };
+  ws.onopen = () => console.log("Realtime connected");
+  ws.onclose = () => console.log("Realtime closed");
+  ws.onerror = (e) => console.error("Realtime error:", e);
 
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
-    switch (msg.type) {
-      case "output_audio.delta":
-        playAudio(msg.delta);
-        break;
-      case "output_text.delta":
-        textBuffer += msg.delta;
-        break;
-      case "output_text.completed":
-        renderText(textBuffer);
-        textBuffer = "";
-        break;
+
+    if (msg.type === "response.audio.delta") {
+      if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.src = `data:audio/wav;base64,${msg.delta}`;
+        audioElement.play();
+      }
+    }
+
+    if (msg.type === "response.output_text.delta") {
+      transcriptBox.innerHTML += msg.delta;
+    }
+
+    if (msg.type === "response.output_text.done") {
+      transcriptBox.innerHTML += "<br>";
     }
   };
-
-  ws.onclose = () => {
-    console.log("WebSocket closed");
-    cleanupMedia();
-  };
-
-  ws.onerror = (err) => {
-    console.error("WebSocket error:", err);
-    cleanupMedia();
-  };
 }
 
-function stopRecording() {
-  talkButton.classList.remove("speaking");
-  isRecording = false;
-  cleanupMedia();
-  if (ws && ws.readyState === WebSocket.OPEN) ws.close();
-  answerBox.innerHTML += `<p><em>Stopped</em></p>`;
-}
+let audioElement;
 
-function cleanupMedia() {
+talkButton.onclick = async () => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    await initSession();
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+      event.data.arrayBuffer().then(buffer => {
+        ws.send(buffer);
+      });
+    }
+  };
+  mediaRecorder.start(250);
+};
+
+stopButton.onclick = () => {
   if (mediaRecorder && mediaRecorder.state !== "inactive") {
     mediaRecorder.stop();
   }
-  mediaRecorder = null;
-}
-
-// Append transcript or product card
-function renderText(text) {
-  const lower = text.toLowerCase();
-
-  // 🔹 Hardcoded demo: Corvette Headlight card
-  if (lower.includes("1975 corvette headlight") || lower.includes("corvette headlight")) {
-    const mockProduct = {
-      name: "1975 Corvette Headlight Motor (Driver’s Side)",
-      price: "$149.99",
-      url: "https://www.corvetteparts.com/sku/1975-corvette-headlight-motor-driver-side",
-      image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Corvette_C3_Headlight.jpg/320px-Corvette_C3_Headlight.jpg"
-    };
-
-    answerBox.innerHTML += `
-      <div class="product-card">
-        <img src="${mockProduct.image}" alt="${mockProduct.name}"/>
-        <p><strong>${mockProduct.name}</strong></p>
-        <p>Price: ${mockProduct.price}</p>
-        <a href="${mockProduct.url}" target="_blank">View Product</a>
-      </div>
-    `;
-    return;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.close();
   }
-
-  // Default plain transcript
-  answerBox.innerHTML += `<p>${text}</p>`;
-}
-
-// Play audio
-function playAudio(base64Data) {
-  const audio = new Audio("data:audio/opus;base64," + base64Data);
-  audio.play();
-}
+};
