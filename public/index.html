@@ -9,22 +9,27 @@
     body {
       margin:0;
       font-family:system-ui,sans-serif;
-      display:grid;
-      place-items:center;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
       min-height:100vh;
       background: radial-gradient(circle at 50% 20%, #dbeafe, #93c5fd 40%, #1e3a8a 90%);
     }
-    .app { text-align:center; max-width:600px; }
+    .app { text-align:center; max-width:700px; width:90%; }
     h1 { margin:6px 0; font-size:22px; }
+
     #pttBtn {
-      width:120px; height:120px; border-radius:50%;
+      width:140px; height:140px; border-radius:50%;
       border:none; cursor:pointer;
       background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af);
       box-shadow:0 6px 18px rgba(37,99,235,.3);
       transition: transform 0.15s ease, box-shadow 0.3s ease;
+      color:white; font-size:16px; font-weight:bold;
     }
     #pttBtn:hover { transform: scale(1.02); }
     #pttBtn:active { transform: scale(0.95); }
+
     #stopBtn {
       margin-top:12px;
       padding:10px 20px;
@@ -34,25 +39,38 @@
       cursor:pointer;
       display:none;
     }
+
     #answer {
       margin-top:20px; padding:12px;
       border:1px solid #ccc; border-radius:8px;
-      background:white; min-height:80px;
-      text-align:left; font-size:14px;
+      background:white; min-height:120px;
+      text-align:left; font-size:14px; line-height:1.4;
+      max-height:300px; overflow-y:auto;
     }
     .line { margin:6px 0; }
     .me { color:#2563eb; font-weight:600; }
     .ai { color:#065f46; font-weight:600; }
+
+    .footer {
+      margin-top:20px;
+      font-size:12px;
+      color:white;
+      opacity:0.8;
+      position:fixed;
+      bottom:10px;
+      right:10px;
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <h1>Talk to VoxTalk</h1>
-    <button id="pttBtn">🎤</button>
+    <h1>VoxTalk</h1>
+    <button id="pttBtn">Click to Talk</button>
     <button id="stopBtn">Stop</button>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
   </div>
+  <div class="footer">Powered by VoxTalk™</div>
 
   <script>
     const pttBtn   = document.getElementById('pttBtn');
@@ -60,7 +78,7 @@
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
 
-    let pc, dc, micTrack;
+    let pc, dc, micTrack, textBuffer="";
 
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
@@ -91,12 +109,15 @@
         dc.onmessage = (e)=> {
           try {
             const evt = JSON.parse(e.data);
-            if (evt.type === "response.message.delta") {
-              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              if (chunk) appendLine("ai", chunk);
+            if (evt.type === "output_text.delta") {
+              textBuffer += evt.delta;
+            }
+            if (evt.type === "output_text.completed") {
+              appendLine("ai", textBuffer);
+              textBuffer = "";
             }
           } catch(err) {
-            console.error("DC message error", err);
+            console.error("Data channel error", err);
           }
         };
 
