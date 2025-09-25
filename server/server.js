@@ -15,7 +15,7 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        response_format: ["audio","text"], // 👈 ask for both modalities
+        response_format: ["audio","text"],
         instructions:
           "You are VoxTalk. Speak aloud in natural English, but also return text transcripts. If relevant, include product links or JSON objects in the text output."
       })
@@ -24,8 +24,12 @@ app.post("/session", async (req, res) => {
     const data = await r.json();
     console.log("Session response:", data);
 
+    // normalize client_secret
+    const clientSecret =
+      data.client_secret?.value || data.client_secret || null;
+
     res.json({
-      client_secret: data.client_secret,
+      client_secret: { value: clientSecret },
       model: "gpt-4o-realtime-preview",
       voice: "alloy"
     });
