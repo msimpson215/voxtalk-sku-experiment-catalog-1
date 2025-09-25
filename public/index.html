@@ -1,114 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VoxTalk</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at 50% 20%, #dbeafe 10%, #93c5fd 40%, #1e3a8a 90%);
-      font-family: system-ui, sans-serif;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-    #talk-button {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 60% 60%, #2563eb 65%, #1e40af 100%);
-      border: none;
-      outline: none;
-      cursor: pointer;
-      color: white;
-      font-size: 1.2rem;
-      font-weight: bold;
-    }
-    #stop-button {
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: none;
-      background: #ef4444;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <div class="container">
-    <button id="talk-button">Click to Talk</button>
-    <button id="stop-button">Stop</button>
+    <button id="talk-button">
+      <span class="label">Click to Talk</span>
+      <div class="halo"></div>
+      <div class="halo"></div>
+      <div class="halo"></div>
+    </button>
+    <div id="answer"></div>
   </div>
-
-  <script>
-    const talkButton = document.getElementById("talk-button");
-    const stopButton = document.getElementById("stop-button");
-
-    let ws;
-    let mediaRecorder;
-    let audioElement;
-
-    async function initSession() {
-      const resp = await fetch("/session", { method: "POST" });
-      const data = await resp.json();
-
-      ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${data.model}`, [
-        "realtime",
-        `openai-insecure-api-key.${data.client_secret.value}`,
-        "openai-beta.realtime-v1"
-      ]);
-
-      ws.onopen = () => console.log("Realtime connected");
-      ws.onclose = () => console.log("Realtime closed");
-      ws.onerror = (e) => console.error("Realtime error:", e);
-
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-
-        if (msg.type === "response.audio.delta") {
-          if (!audioElement) {
-            audioElement = new Audio();
-          }
-          audioElement.src = `data:audio/wav;base64,${msg.delta}`;
-          audioElement.play();
-        }
-      };
-    }
-
-    talkButton.onclick = async () => {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        await initSession();
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          event.data.arrayBuffer().then(buffer => {
-            ws.send(buffer);
-          });
-        }
-      };
-      mediaRecorder.start(250);
-    };
-
-    stopButton.onclick = () => {
-      if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-      }
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    };
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
