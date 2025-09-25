@@ -36,7 +36,6 @@ app.post("/session", async (req, res) => {
   }
 });
 
-// Serve static files
 app.use(express.static("public"));
 
 const port = process.env.PORT || 3000;
