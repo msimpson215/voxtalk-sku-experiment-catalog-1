@@ -15,8 +15,9 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
+        response_format: ["audio","text"], // 👈 ask for both modalities
         instructions:
-          "You are VoxTalk. Greet politely, speak only English, and keep answers clear."
+          "You are VoxTalk. Speak aloud in natural English, but also return text transcripts. If relevant, include product links or JSON objects in the text output."
       })
     });
 
