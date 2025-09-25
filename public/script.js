@@ -1,116 +1,91 @@
-const talkBtn = document.getElementById('talk-button');
-const stopBtn = document.getElementById('stop-button');
-const answerEl = document.getElementById('answer');
-const rtAudio = document.getElementById('remote');
-const productCard = document.getElementById('product-card');
-
-function appendLine(role, text) {
-  if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
-  const div = document.createElement('div');
-  div.className = 'line';
-  div.innerHTML = `<strong>${role === 'me' ? 'You:' : 'AI:'}</strong> ${text}`;
-  answerEl.appendChild(div);
-  answerEl.scrollTop = answerEl.scrollHeight;
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 20%, #dbeafe 10%, #93c5fd 40%, #1e3a8a 90%);
+  font-family: system-ui, sans-serif;
 }
 
-// Show structured product card
-function renderProductCard(product) {
-  productCard.style.display = 'block';
-  productCard.innerHTML = `
-    <img src="${product.image}" alt="${product.product}">
-    <h3>${product.product}</h3>
-    <p>${product.description}</p>
-    <p><strong>Price:</strong> ${product.price}</p>
-    <a href="${product.url}" target="_blank">View Product</a>
-  `;
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 80%;
+  max-width: 700px;
 }
 
-async function initRealtime() {
-  try {
-    const s = await fetch("/session", { method: "POST" });
-    const { client_secret, model, voice } = await s.json();
-
-    const pc = new RTCPeerConnection();
-    const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const micTrack = mic.getTracks()[0];
-    micTrack.enabled = false;
-    pc.addTrack(micTrack, mic);
-
-    pc.ontrack = (ev) => {
-      rtAudio.srcObject = ev.streams[0];
-      rtAudio.play().catch(() => {});
-    };
-
-    const dc = pc.createDataChannel("events");
-    let textBuffer = "";
-
-    dc.onmessage = (e) => {
-      try {
-        const evt = JSON.parse(e.data);
-
-        // Handle AI text output
-        if (evt.type === "output_text.delta") {
-          textBuffer += evt.delta;
-        }
-        if (evt.type === "output_text.completed") {
-          console.log("Full text:", textBuffer);
-
-          try {
-            const parsed = JSON.parse(textBuffer);
-            renderProductCard(parsed);
-          } catch {
-            appendLine("ai", textBuffer);
-          }
-          textBuffer = "";
-        }
-
-        // Handle AI audio output
-        if (evt.type === "response.message.delta") {
-          const chunk = evt.delta.map(d => d.content?.[0]?.text || "").join("");
-          if (chunk) appendLine("ai", chunk);
-        }
-      } catch (err) {
-        console.error("Event parse error:", err);
-      }
-    };
-
-    const offer = await pc.createOffer({ offerToReceiveAudio: true });
-    await pc.setLocalDescription(offer);
-
-    const r = await fetch(
-      `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${client_secret.value}`,
-          "Content-Type": "application/sdp"
-        },
-        body: offer.sdp
-      }
-    );
-    const answer = { type: "answer", sdp: await r.text() };
-    await pc.setRemoteDescription(answer);
-
-    let talking = false;
-    talkBtn.onclick = () => {
-      talking = !talking;
-      micTrack.enabled = talking;
-      if (talking) {
-        appendLine("me", "I need a headlight motor for a 1975 Corvette.");
-      } else {
-        appendLine("me", "(Stopped)");
-      }
-    };
-
-    stopBtn.onclick = () => {
-      talking = false;
-      micTrack.enabled = false;
-      appendLine("me", "(Stopped conversation)");
-    };
-
-  } catch (err) {
-    console.error("Realtime init failed", err);
-  }
+#talk-button {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 60% 60%, #2563eb 65%, #1e40af 100%);
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-initRealtime();
+.label {
+  position: relative;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+.halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(59, 130, 246, 0.7);
+  opacity: 0;
+  animation: pulse 1.5s infinite;
+  pointer-events: none;
+}
+
+#talk-button.speaking .halo {
+  opacity: 1;
+}
+
+.halo:nth-child(2) { animation-delay: 0.3s; }
+.halo:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+#answer {
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  border-radius: 12px;
+  padding: 15px;
+  min-height: 80px;
+  width: 100%;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.product-card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 10px;
+  background: #f9fafb;
+}
+
+.product-card img {
+  max-width: 120px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
