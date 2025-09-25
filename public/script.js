@@ -1,5 +1,5 @@
 let ws;
-let mockMode = false; // change to true to force mock demo
+let mockMode = false;
 const talkBtn = document.getElementById("talk-btn");
 const stopBtn = document.getElementById("stop-btn");
 const transcriptEl = document.getElementById("transcript");
@@ -8,13 +8,17 @@ function connectWS() {
   fetch("/session", { method: "POST" })
     .then(r => r.json())
     .then(data => {
-      if (!data.client_secret) {
-        console.warn("No client_secret received — switching to mock mode.");
+      console.log("Session response:", data); // full inspect
+
+      const wsUrl = data?.client_secret?.value;
+      if (!wsUrl) {
+        console.error("No client_secret.value found — switching to mock mode.");
         mockMode = true;
         return;
       }
-      ws = new WebSocket(data.client_secret, ["realtime"]);
-      ws.onopen = () => console.log("WebSocket connected.");
+
+      ws = new WebSocket(wsUrl, ["realtime"]);
+      ws.onopen = () => console.log("WebSocket connected:", wsUrl);
       ws.onerror = (e) => {
         console.error("WebSocket error:", e);
         mockMode = true;
@@ -23,7 +27,7 @@ function connectWS() {
       ws.onmessage = onMessage;
     })
     .catch(err => {
-      console.error("Session error:", err);
+      console.error("Session fetch error:", err);
       mockMode = true;
     });
 }
@@ -48,6 +52,7 @@ function onMessage(ev) {
 }
 
 function showMockResponse() {
+  console.warn("MOCK MODE ACTIVE — showing fake part card.");
   transcriptEl.innerHTML += `
     <div style="margin-top:10px;">
       <strong>1975 Corvette Headlight Motor</strong><br>
@@ -67,10 +72,8 @@ connectWS();
 talkBtn.addEventListener("click", () => {
   console.log("Talk button pressed.");
   if (mockMode) showMockResponse();
-  // Otherwise, start mic capture + send audio chunks to ws
 });
 
 stopBtn.addEventListener("click", () => {
   console.log("Stop button pressed.");
-  // Stop mic recording, close WS if desired
 });
