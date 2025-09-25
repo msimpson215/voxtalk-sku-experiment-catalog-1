@@ -28,8 +28,8 @@ app.post("/session", async (req, res) => {
     }
 
     const json = await r.json();
-    console.log("OpenAI session (token):", json.client_secret.value);
-    res.json({ token: json.client_secret.value }); // return only token
+    console.log("OpenAI session token:", json.client_secret.value);
+    res.json({ token: json.client_secret.value }); // ✅ only send token
   } catch (err) {
     console.error("Session error:", err);
     res.status(500).send("Error creating session");
