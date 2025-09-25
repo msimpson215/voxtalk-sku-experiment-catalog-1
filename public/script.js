@@ -89,23 +89,30 @@ function cleanupMedia() {
 
 // Append transcript or product card
 function renderText(text) {
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed.name && parsed.url) {
-      answerBox.innerHTML += `
-        <div class="product-card">
-          <img src="${parsed.image || ''}" alt="${parsed.name}"/>
-          <p><strong>${parsed.name}</strong></p>
-          <p>Price: ${parsed.price || 'N/A'}</p>
-          <a href="${parsed.url}" target="_blank">View Product</a>
-        </div>
-      `;
-    } else {
-      answerBox.innerHTML += `<p>${text}</p>`;
-    }
-  } catch {
-    answerBox.innerHTML += `<p>${text}</p>`;
+  const lower = text.toLowerCase();
+
+  // 🔹 Hardcoded demo: Corvette Headlight card
+  if (lower.includes("1975 corvette headlight") || lower.includes("corvette headlight")) {
+    const mockProduct = {
+      name: "1975 Corvette Headlight Motor (Driver’s Side)",
+      price: "$149.99",
+      url: "https://www.corvetteparts.com/sku/1975-corvette-headlight-motor-driver-side",
+      image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Corvette_C3_Headlight.jpg/320px-Corvette_C3_Headlight.jpg"
+    };
+
+    answerBox.innerHTML += `
+      <div class="product-card">
+        <img src="${mockProduct.image}" alt="${mockProduct.name}"/>
+        <p><strong>${mockProduct.name}</strong></p>
+        <p>Price: ${mockProduct.price}</p>
+        <a href="${mockProduct.url}" target="_blank">View Product</a>
+      </div>
+    `;
+    return;
   }
+
+  // Default plain transcript
+  answerBox.innerHTML += `<p>${text}</p>`;
 }
 
 // Play audio
