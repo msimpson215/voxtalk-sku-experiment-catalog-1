@@ -17,10 +17,22 @@ function connectWS() {
       }
       const wsUrl = `wss://api.openai.com/v1/realtime?session=${data.token.split("session=")[1] || data.token}`;
       console.log("Connecting to OpenAI WS:", wsUrl);
+
       ws = new WebSocket(wsUrl, ["realtime"]);
       ws.binaryType = "arraybuffer";
 
-      ws.onopen = () => console.log("✅ WS connected");
+      ws.onopen = () => {
+        console.log("✅ WS connected");
+        // 🔑 NEW: keep session alive and request audio+text
+        ws.send(JSON.stringify({
+          type: "session.update",
+          session: {
+            modalities: ["audio", "text"],
+            instructions: "You are VoxTalk. Speak naturally but also return text output for display."
+          }
+        }));
+      };
+
       ws.onmessage = onMessage;
       ws.onerror = (e) => console.error("❌ WS error:", e);
       ws.onclose = () => console.log("🔌 WS closed");
@@ -80,8 +92,8 @@ async function startRecording() {
           ws.send(JSON.stringify({
             type: "response.create",
             response: {
-              modalities: ["audio","text"],
-              instructions: "Speak a short summary and also return full text."
+              modalities: ["audio", "text"],
+              instructions: "Speak a short summary and also return text output with any URLs."
             }
           }));
         } else {
