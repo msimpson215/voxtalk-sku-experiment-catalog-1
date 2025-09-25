@@ -1,11 +1,13 @@
 import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import WebSocket from "ws";
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
+// --- STEP 1: Create Session and Log Full Response ---
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -21,22 +23,14 @@ app.post("/session", async (req, res) => {
       })
     });
 
+    const text = await r.text();
+    console.log("\n🔎 FULL SESSION RESPONSE FROM OPENAI:");
+    console.log(text);
+
     if (!r.ok) {
-      const text = await r.text();
-      console.error("Session creation failed:", text);
+      console.error("❌ SESSION CREATION FAILED:", r.status);
       return res.status(r.status).send(text);
     }
 
-    const json = await r.json();
-    console.log("OpenAI session token:", json.client_secret.value);
-    res.json({ token: json.client_secret.value }); // ✅ only send token
-  } catch (err) {
-    console.error("Session error:", err);
-    res.status(500).send("Error creating session");
-  }
-});
-
-app.use(express.static("public"));
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`VoxTalk running on port ${port}`));
+    const json = JSON.parse(text);
+    const token = json.client_secret?.value || n_
