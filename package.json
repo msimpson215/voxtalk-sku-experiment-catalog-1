@@ -1,5 +1,5 @@
 {
-  "name": "voxtalk-baseline",
+  "name": "voxtalk-multimodal",
   "version": "1.0.0",
   "type": "module",
   "main": "server/server.js",
