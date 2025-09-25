@@ -15,14 +15,8 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        response_format: { modalities: ["audio", "text"] },
-        instructions: `
-          You are VoxTalk, a helpful AI voice assistant.
-          Always speak your answers aloud in clear, simple English.
-          Also return structured text with:
-          - Transcript of your spoken reply
-          - JSON blocks for products if relevant (with name, price, image URL, link).
-        `
+        instructions:
+          "You are VoxTalk, an AI voice assistant. ALWAYS respond in English. If the user speaks another language, translate it and reply only in English."
       })
     });
 
