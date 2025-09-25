@@ -10,34 +10,36 @@ function connectWS() {
   fetch("/session", { method: "POST" })
     .then(r => r.json())
     .then(data => {
+      if (data.error) {
+        console.error("🚨 API ERROR:", data);
+        alert(`⚠️ OpenAI API Error:\nStatus: ${data.status || "unknown"}\nMessage: ${data.message}\n\nCheck Render logs for full raw response.`);
+        return;
+      }
+
       console.log("Session token:", data.token);
       if (!data.token) {
         console.error("No token received!");
+        alert("⚠️ No token returned from OpenAI. Possible quota/billing issue.");
         return;
       }
+
       const wsUrl = `wss://api.openai.com/v1/realtime?session=${data.token.split("session=")[1] || data.token}`;
       console.log("Connecting to OpenAI WS:", wsUrl);
 
       ws = new WebSocket(wsUrl, ["realtime"]);
       ws.binaryType = "arraybuffer";
 
-      ws.onopen = () => {
-        console.log("✅ WS connected");
-        // ✅ Keep session alive by sending a no-op
-        ws.send(JSON.stringify({
-          type: "response.create",
-          response: {
-            modalities: ["text"],
-            instructions: "Say 'ready'. This keeps the session open until user speaks."
-          }
-        }));
-      };
+      ws.onopen = () => console.log("✅ WS connected");
 
       ws.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);
           if (msg.type === "output_audio.delta") playAudioChunk(msg.delta);
           if (msg.type === "output_text.delta") appendTranscript("VoxTalk", msg.delta);
+          if (msg.type === "response.error") {
+            console.error("🚨 RESPONSE ERROR:", msg);
+            alert(`⚠️ OpenAI Response Error:\n${msg.error?.message || "Unknown error"}`);
+          }
         } catch (e) {
           console.error("Parse error:", e, ev.data);
         }
@@ -46,7 +48,10 @@ function connectWS() {
       ws.onerror = (e) => console.error("❌ WS error:", e);
       ws.onclose = () => console.log("🔌 WS closed");
     })
-    .catch(err => console.error("Session fetch error:", err));
+    .catch(err => {
+      console.error("Session fetch error:", err);
+      alert(`⚠️ Failed to reach /session endpoint:\n${err.message}`);
+    });
 }
 
 function playAudioChunk(base64Data) {
@@ -99,6 +104,9 @@ async function startRecording() {
               instructions: "Respond naturally and include text output."
             }
           }));
+        } else {
+          console.error("WS not open when trying to send audio.");
+          alert("⚠️ WebSocket not open — cannot send audio.");
         }
       });
     };
@@ -109,6 +117,7 @@ async function startRecording() {
     talkBtn.textContent = "🛑 Stop";
   } catch (err) {
     console.error("Mic error:", err);
+    alert(`⚠️ Microphone error:\n${err.message}`);
   }
 }
 
