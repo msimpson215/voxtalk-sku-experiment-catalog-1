@@ -10,28 +10,27 @@ app.post("/session", async (req, res) => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        response_format: ["audio","text"],
         instructions:
-          "You are VoxTalk. Speak aloud in natural English, but also return text transcripts. If relevant, include product links or JSON objects in the text output."
-      })
+          "You are VoxTalk. Always respond in English. Provide clear spoken responses, and if asked for details, also send text (URLs, prices, images) in the text channel."
+      }),
     });
 
     const data = await r.json();
-    console.log("Session response:", data);
+    console.log("OpenAI response from /session:", data);
 
-    // normalize client_secret
-    const clientSecret =
-      data.client_secret?.value || data.client_secret || null;
+    if (!r.ok) {
+      return res.status(r.status).json({ error: data });
+    }
 
     res.json({
-      client_secret: { value: clientSecret },
+      client_secret: data.client_secret,
       model: "gpt-4o-realtime-preview",
-      voice: "alloy"
+      voice: "alloy",
     });
   } catch (e) {
     console.error("Session error:", e);
