@@ -15,14 +15,14 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        instructions: `Speak a short summary in audio, but return structured JSON in text:
-        {
-          "product": "1975 Corvette Headlight Motor (Driver’s Side)",
-          "description": "Replacement headlight motor assembly for 1975 Corvette. Driver’s side fitment. OEM quality.",
-          "price": "$179.99",
-          "url": "https://corvetteparts.com/1975/headlight-motor-driver",
-          "image": "https://corvetteparts.com/images/1975-headlight-motor.jpg"
-        }`
+        response_format: { modalities: ["audio", "text"] },
+        instructions: `
+          You are VoxTalk, a helpful AI voice assistant.
+          Always speak your answers aloud in clear, simple English.
+          Also return structured text with:
+          - Transcript of your spoken reply
+          - JSON blocks for products if relevant (with name, price, image URL, link).
+        `
       })
     });
 
