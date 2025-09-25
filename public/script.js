@@ -21,51 +21,21 @@ function connectWS() {
       ws = new WebSocket(wsUrl, ["realtime"]);
       ws.binaryType = "arraybuffer";
 
-      ws.onopen = () => {
-        console.log("✅ WS connected");
-
-        // Send session.update to configure modalities
-        ws.send(JSON.stringify({
-          type: "session.update",
-          session: {
-            modalities: ["audio", "text"],
-            instructions: "You are VoxTalk. Speak naturally but also return text output for display."
-          }
-        }));
-
-        // Send test message immediately
-        ws.send(JSON.stringify({
-          type: "response.create",
-          response: {
-            modalities: ["audio", "text"],
-            instructions: "Say hello. This is a connection test. Keep it very short."
-          }
-        }));
-      };
-
-      // 🔔 Log every single raw event so we can see errors or completions
+      ws.onopen = () => console.log("✅ WS connected");
       ws.onmessage = (ev) => {
-        console.log("🔔 RAW EVENT:", ev.data);
-        onMessage(ev);
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === "output_audio.delta") playAudioChunk(msg.delta);
+          if (msg.type === "output_text.delta") appendTranscript("VoxTalk", msg.delta);
+        } catch (e) {
+          console.error("Parse error:", e, ev.data);
+        }
       };
 
       ws.onerror = (e) => console.error("❌ WS error:", e);
-      ws.onclose = (e) => console.log("🔌 WS closed", e);
+      ws.onclose = () => console.log("🔌 WS closed");
     })
     .catch(err => console.error("Session fetch error:", err));
-}
-
-function onMessage(ev) {
-  const msg = typeof ev.data === "string" ? JSON.parse(ev.data) : null;
-  if (!msg) return;
-
-  if (msg.type === "output_text.delta") appendTranscript("VoxTalk", msg.delta);
-  if (msg.type === "output_audio.delta") playAudioChunk(msg.delta);
-
-  if (msg.type === "response.error") {
-    console.error("🚨 OpenAI Response Error:", msg);
-    appendTranscript("System", `<span style="color:red;">Error: ${msg.error?.message || "Unknown"}</span>`);
-  }
 }
 
 function playAudioChunk(base64Data) {
@@ -79,4 +49,70 @@ function playAudioChunk(base64Data) {
   });
 }
 
-function appendTran
+function appendTranscript(speaker, text) {
+  transcriptEl.innerHTML += `<div><b>${speaker}:</b> ${text}</div>`;
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+async function toggleRecording() {
+  if (!isRecording) {
+    await startRecording();
+  } else {
+    stopRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      blob.arrayBuffer().then(buf => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "input_audio_buffer.append",
+            audio: arrayBufferToBase64(buf)
+          }));
+          ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+          ws.send(JSON.stringify({
+            type: "response.create",
+            response: {
+              modalities: ["audio", "text"], // ✅ request text + audio
+              instructions: "Respond naturally and include text output."
+            }
+          }));
+        }
+      });
+    };
+
+    mediaRecorder.start();
+    appendTranscript("You", "<i>Listening...</i>");
+    isRecording = true;
+    talkBtn.textContent = "🛑 Stop";
+  } catch (err) {
+    console.error("Mic error:", err);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  isRecording = false;
+  talkBtn.textContent = "🎙️ Talk / Stop";
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+connectWS();
+talkBtn.addEventListener("click", toggleRecording);
