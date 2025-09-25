@@ -20,30 +20,9 @@ body {
   background-color: #0056b3;
   border: none;
   color: white;
-  font-size: 1rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  position: relative;
   margin-bottom: 20px;
-}
-
-.talk-btn .hint {
-  opacity: 0.5;
-  font-size: 0.85rem;
-  pointer-events: none;
-}
-
-.talk-btn.speaking::after {
-  content: "";
-  position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  animation: haloPulse 1.2s linear infinite;
-  box-shadow: 0 0 0 0 rgba(0, 0, 255, 0.4);
-}
-
-@keyframes haloPulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 0, 255, 0.4); }
-  100% { box-shadow: 0 0 0 16px rgba(0, 0, 255, 0); }
 }
 
 .stop-btn {
@@ -61,7 +40,7 @@ body {
   overflow-y: auto;
   border: 1px solid #444;
   padding: 10px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   text-align: left;
 }
