@@ -6,7 +6,6 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ Return the FULL session JSON (includes proper wss://api.openai.com URL)
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -29,10 +28,10 @@ app.post("/session", async (req, res) => {
     }
 
     const json = await r.json();
-    console.log("✅ OpenAI session response:", json); // now you SEE what you get
-    res.json(json); // ✅ send entire object back (not just ek_ token)
+    console.log("OpenAI session (token):", json.client_secret.value);
+    res.json({ token: json.client_secret.value }); // return only token
   } catch (err) {
-    console.error("❌ Session error:", err);
+    console.error("Session error:", err);
     res.status(500).send("Error creating session");
   }
 });
