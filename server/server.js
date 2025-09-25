@@ -6,6 +6,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// POST /session -> creates a realtime session with OpenAI
 app.post("/session", async (req, res) => {
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -17,23 +18,28 @@ app.post("/session", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview",
         voice: "alloy",
-        modalities: ["audio","text"]
+        modalities: ["audio", "text"]
       })
     });
 
     if (!r.ok) {
       const text = await r.text();
+      console.error("Session creation failed:", text);
       return res.status(r.status).send(text);
     }
 
     const json = await r.json();
     res.json(json);
   } catch (err) {
-    res.status(500).send(String(err));
+    console.error("Session error:", err);
+    res.status(500).send("Error creating session");
   }
 });
 
+// Serve static frontend files
 app.use(express.static("public"));
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`VoxTalk server running on port ${port}`));
+app.listen(port, () => {
+  console.log(`VoxTalk server running on port ${port}`);
+});
