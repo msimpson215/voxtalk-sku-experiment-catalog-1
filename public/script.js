@@ -23,12 +23,22 @@ function connectWS() {
 
       ws.onopen = () => {
         console.log("✅ WS connected");
-        // 🔑 NEW: keep session alive and request audio+text
+
+        // Send session.update to configure modalities
         ws.send(JSON.stringify({
           type: "session.update",
           session: {
             modalities: ["audio", "text"],
             instructions: "You are VoxTalk. Speak naturally but also return text output for display."
+          }
+        }));
+
+        // 🔑 Send a test message immediately so connection stays alive
+        ws.send(JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions: "Say hello. This is a connection test. Keep it very short."
           }
         }));
       };
