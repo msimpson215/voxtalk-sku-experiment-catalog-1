@@ -1,69 +1,92 @@
 const talkButton = document.getElementById("talk-button");
-const stopButton = document.getElementById("stop-button");
-const transcriptBox = document.getElementById("transcript");
+const answerBox = document.getElementById("answer");
 
-let ws;
 let mediaRecorder;
+let ws;
+let isRecording = false;
+let textBuffer = "";
 
-async function initSession() {
+// Start/Stop toggle
+talkButton.addEventListener("click", async () => {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
+
+async function startRecording() {
+  talkButton.classList.add("speaking");
+  answerBox.innerHTML += `<p><em>Listening...</em></p>`;
+  isRecording = true;
+
+  // Request session from server
   const resp = await fetch("/session", { method: "POST" });
-  const data = await resp.json();
+  const { client_secret, model } = await resp.json();
 
-  ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${data.model}`, [
+  ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${model}`, [
     "realtime",
-    `openai-insecure-api-key.${data.client_secret.value}`,
+    "openai-insecure-api-key." + client_secret,
     "openai-beta.realtime-v1"
   ]);
 
-  ws.onopen = () => console.log("Realtime connected");
-  ws.onclose = () => console.log("Realtime closed");
-  ws.onerror = (e) => console.error("Realtime error:", e);
+  ws.onopen = () => {
+    console.log("Realtime connected");
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorder.ondataavailable = (e) => ws.send(e.data);
+      mediaRecorder.start(250);
+    });
+  };
 
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
-
-    if (msg.type === "response.audio.delta") {
-      if (!audioElement) {
-        audioElement = new Audio();
-        audioElement.src = `data:audio/wav;base64,${msg.delta}`;
-        audioElement.play();
-      }
-    }
-
-    if (msg.type === "response.output_text.delta") {
-      transcriptBox.innerHTML += msg.delta;
-    }
-
-    if (msg.type === "response.output_text.done") {
-      transcriptBox.innerHTML += "<br>";
+    switch (msg.type) {
+      case "output_audio.delta":
+        playAudio(msg.delta);
+        break;
+      case "output_text.delta":
+        textBuffer += msg.delta;
+        break;
+      case "output_text.completed":
+        renderText(textBuffer);
+        textBuffer = "";
+        break;
     }
   };
 }
 
-let audioElement;
+function stopRecording() {
+  talkButton.classList.remove("speaking");
+  isRecording = false;
+  if (mediaRecorder) mediaRecorder.stop();
+  if (ws) ws.close();
+  answerBox.innerHTML += `<p><em>Stopped</em></p>`;
+}
 
-talkButton.onclick = async () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    await initSession();
-  }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-      event.data.arrayBuffer().then(buffer => {
-        ws.send(buffer);
-      });
+// Append text and detect product cards
+function renderText(text) {
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.name && parsed.url) {
+      answerBox.innerHTML += `
+        <div class="product-card">
+          <img src="${parsed.image || ''}" alt="${parsed.name}"/>
+          <p><strong>${parsed.name}</strong></p>
+          <p>Price: ${parsed.price || 'N/A'}</p>
+          <a href="${parsed.url}" target="_blank">View Product</a>
+        </div>
+      `;
+    } else {
+      answerBox.innerHTML += `<p>${text}</p>`;
     }
-  };
-  mediaRecorder.start(250);
-};
+  } catch {
+    answerBox.innerHTML += `<p>${text}</p>`;
+  }
+}
 
-stopButton.onclick = () => {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    mediaRecorder.stop();
-  }
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.close();
-  }
-};
+// Play audio stream
+function playAudio(base64Data) {
+  const audio = new Audio("data:audio/opus;base64," + base64Data);
+  audio.play();
+}
