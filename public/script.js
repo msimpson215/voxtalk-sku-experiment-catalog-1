@@ -21,7 +21,18 @@ function connectWS() {
       ws = new WebSocket(wsUrl, ["realtime"]);
       ws.binaryType = "arraybuffer";
 
-      ws.onopen = () => console.log("✅ WS connected");
+      ws.onopen = () => {
+        console.log("✅ WS connected");
+        // ✅ Keep session alive by sending a no-op
+        ws.send(JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["text"],
+            instructions: "Say 'ready'. This keeps the session open until user speaks."
+          }
+        }));
+      };
+
       ws.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);
@@ -84,7 +95,7 @@ async function startRecording() {
           ws.send(JSON.stringify({
             type: "response.create",
             response: {
-              modalities: ["audio", "text"], // ✅ request text + audio
+              modalities: ["audio", "text"],
               instructions: "Respond naturally and include text output."
             }
           }));
