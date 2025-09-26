@@ -37,7 +37,9 @@ app.post("/session", async (req, res) => {
 
     const json = JSON.parse(text);
     const token = json.client_secret?.value || null;
-    if (!token) return res.status(500).json({ error: true, message: "No token" });
+    if (!token) {
+      return res.status(500).json({ error: true, message: "No token returned" });
+    }
 
     res.json({ token, model: DEFAULT_MODEL });
   } catch (err) {
@@ -63,7 +65,9 @@ app.post("/chat-tts", async (req, res) => {
     });
 
     const chatJson = await chat.json();
-    const text = chatJson.choices?.[0]?.message?.content || "…";
+    const text =
+      chatJson.choices?.[0]?.message?.content?.trim() ||
+      "I’m here — using fallback until realtime is back.";
 
     const speech = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
@@ -82,11 +86,12 @@ app.post("/chat-tts", async (req, res) => {
     res.setHeader("x-text", encodeURIComponent(text));
     speech.body.pipe(res);
   } catch (err) {
+    console.error("💥 Fallback error:", err);
     res.status(500).json({ error: true, message: String(err) });
   }
 });
 
-// --- Simple browser diagnostic
+// --- Simple realtime diagnostic endpoint
 app.get("/diag/realtime", async (req, res) => {
   const model = req.query.model || DEFAULT_MODEL;
   const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
@@ -103,7 +108,11 @@ app.get("/diag/realtime", async (req, res) => {
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
     });
 
-    const timeout = setTimeout(() => ws.close(), 3000);
+    const timeout = setTimeout(() => {
+      try {
+        ws.close();
+      } catch {}
+    }, 3000);
 
     ws.on("open", () => (result.connected = true));
 
@@ -122,7 +131,7 @@ app.get("/diag/realtime", async (req, res) => {
 
     ws.on("error", (e) => {
       clearTimeout(timeout);
-      result.error = String(e);
+      result.error = e.message || String(e);
       res.status(500).json(result);
     });
   } catch (err) {
@@ -133,5 +142,7 @@ app.get("/diag/realtime", async (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () =>
-  console.log(`🚀 VoxTalk server ready on port ${port} using model: ${DEFAULT_MODEL}`)
+  console.log(
+    `🚀 VoxTalk server running on port ${port} using model: ${DEFAULT_MODEL}`
+  )
 );
