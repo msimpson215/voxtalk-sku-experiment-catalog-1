@@ -16,13 +16,17 @@ function appendTranscript(speaker, text) {
 }
 
 function banner(msg, tone = "warn") {
+  if (!bannerEl) {
+    console.error("⚠️ bannerEl missing in HTML");
+    return;
+  }
   bannerEl.style.display = "block";
   bannerEl.textContent = msg;
   bannerEl.className = tone === "ok" ? "banner ok" : "banner warn";
 }
 
 function clearBanner() {
-  bannerEl.style.display = "none";
+  if (bannerEl) bannerEl.style.display = "none";
 }
 
 function arrayBufferToBase64(buffer) {
@@ -69,9 +73,7 @@ async function startRecording() {
     audioChunks = [];
 
     ws = await connectWS();
-    if (!ws) {
-      banner("No session token — fallback only.", "warn");
-    }
+    if (!ws) banner("No session token — fallback only.", "warn");
 
     if (ws) {
       ws.onopen = () => console.log("✅ WS connected");
@@ -93,10 +95,8 @@ async function startRecording() {
         } catch {}
       };
 
-      ws.onerror = (e) =>
-        banner(`Realtime WS error: ${e?.message || e}`, "warn");
-      ws.onclose = () =>
-        console.log("🔌 WS closed — may fallback if no deltas.");
+      ws.onerror = (e) => banner(`Realtime WS error: ${e?.message || e}`, "warn");
+      ws.onclose = () => console.log("🔌 WS closed — may fallback if no deltas.");
     }
 
     mediaRecorder.ondataavailable = (e) => {
@@ -176,9 +176,7 @@ async function fallbackSpeak(messages) {
 // --- Audio Playback ---
 function playAudioChunk(base64Data) {
   if (!audioCtx) audioCtx = new AudioContext();
-  const audioData = Uint8Array.from(atob(base64Data), (c) =>
-    c.charCodeAt(0)
-  ).buffer;
+  const audioData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0)).buffer;
   audioCtx.decodeAudioData(audioData).then((decoded) => {
     const source = audioCtx.createBufferSource();
     source.buffer = decoded;
