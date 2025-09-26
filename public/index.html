@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VoxTalk</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="container">
-    <button id="talk-btn" class="talk-btn">
-      🎙️ Talk / Stop
-    </button>
-    <div id="transcript" class="transcript"></div>
-  </div>
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font: 16px system-ui, sans-serif;
+      margin: 24px;
+      background: #fafafa;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .talk-btn {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .transcript {
+      min-height: 150px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
