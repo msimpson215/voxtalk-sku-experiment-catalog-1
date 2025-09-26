@@ -16,10 +16,7 @@ function appendTranscript(speaker, text) {
 }
 
 function banner(msg, tone = "warn") {
-  if (!bannerEl) {
-    console.error("⚠️ bannerEl missing in HTML");
-    return;
-  }
+  if (!bannerEl) return console.error("⚠️ bannerEl missing in HTML");
   bannerEl.style.display = "block";
   bannerEl.textContent = msg;
   bannerEl.className = tone === "ok" ? "banner ok" : "banner warn";
@@ -32,13 +29,10 @@ function clearBanner() {
 function arrayBufferToBase64(buffer) {
   let binary = "";
   const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
 
-// --- Connect to Realtime WS ---
 function connectWS() {
   return fetch("/session", { method: "POST" })
     .then((r) => r.json())
@@ -60,7 +54,6 @@ function connectWS() {
     });
 }
 
-// --- Start/Stop Recording ---
 async function toggleRecording() {
   if (!isRecording) await startRecording();
   else stopRecording();
@@ -77,7 +70,6 @@ async function startRecording() {
 
     if (ws) {
       ws.onopen = () => console.log("✅ WS connected");
-
       ws.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);
@@ -94,7 +86,6 @@ async function startRecording() {
           }
         } catch {}
       };
-
       ws.onerror = (e) => banner(`Realtime WS error: ${e?.message || e}`, "warn");
       ws.onclose = () => console.log("🔌 WS closed — may fallback if no deltas.");
     }
@@ -107,25 +98,13 @@ async function startRecording() {
       const blob = new Blob(audioChunks, { type: "audio/webm" });
       blob.arrayBuffer().then((buf) => {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(
-            JSON.stringify({
-              type: "input_audio_buffer.append",
-              audio: arrayBufferToBase64(buf),
-            })
-          );
+          ws.send(JSON.stringify({ type: "input_audio_buffer.append", audio: arrayBufferToBase64(buf) }));
           ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-          ws.send(
-            JSON.stringify({
-              type: "response.create",
-              response: {
-                modalities: ["audio", "text"],
-                instructions: "Respond naturally and include text transcript.",
-                audio: { voice: "alloy" },
-              },
-            })
-          );
+          ws.send(JSON.stringify({
+            type: "response.create",
+            response: { modalities: ["audio", "text"], instructions: "Respond naturally and include text transcript.", audio: { voice: "alloy" } }
+          }));
 
-          // Watchdog timer → fallback if no deltas in 3s
           clearTimeout(responseTimer);
           responseTimer = setTimeout(() => {
             banner("Realtime silent — using fallback.", "warn");
@@ -153,7 +132,6 @@ function stopRecording() {
   talkBtn.textContent = "🎙️ Talk / Stop";
 }
 
-// --- Fallback Chat + TTS ---
 async function fallbackSpeak(messages) {
   try {
     const r = await fetch("/chat-tts", {
@@ -173,7 +151,6 @@ async function fallbackSpeak(messages) {
   }
 }
 
-// --- Audio Playback ---
 function playAudioChunk(base64Data) {
   if (!audioCtx) audioCtx = new AudioContext();
   const audioData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0)).buffer;
