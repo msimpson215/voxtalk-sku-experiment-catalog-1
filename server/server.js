@@ -94,7 +94,9 @@ app.post("/chat-tts", async (req, res) => {
 // --- Simple realtime diagnostic endpoint
 app.get("/diag/realtime", async (req, res) => {
   const model = req.query.model || DEFAULT_MODEL;
-  const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
+  const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(
+    model
+  )}`;
   const result = {
     model,
     connected: false,
