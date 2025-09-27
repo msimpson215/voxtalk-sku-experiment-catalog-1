@@ -92,37 +92,63 @@
       pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
     }
 
-    // --- BASIC "AI" PARSER FOR DEMO ---
+    // --- IMPROVED "AI" PARSER FOR VOICE ---
     function processUtterance(utterance) {
-      // Simple match for "I want X bananas", "Add milk", etc.
-      let m = utterance.match(/(?:want|add|put|need|buy)?\s*(\d+)?\s*([a-z\s]+)(?: to my cart)?/i);
-      if (m) {
-        let qty = m[1] ? parseInt(m[1]) : 1;
-        let item = m[2].trim().toLowerCase();
-        // Try to match with/without skin for salmon
-        if (item.includes("salmon")) {
-          if (item.includes("no skin")) item = "salmon no skin";
-          else if (item.includes("with skin")) item = "salmon with skin";
-          else item = "salmon with skin"; // default
-        }
-        let found = skuCatalog[item];
-        if (found) {
-          appendLine("ai", `Added ${found.name} (${found.sku}) x${qty} to your cart.`);
-          addToCart(found, qty);
-          return;
+      // Map number words to digits
+      const numberWords = {
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+        "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20
+      };
+
+      let utter = utterance.toLowerCase().replace(/-/g, ' ');
+
+      // Try to find a digit in the utterance
+      let qty = 1;
+      let qtyMatch = utter.match(/\b(\d+)\b/);
+      if (qtyMatch) {
+        qty = parseInt(qtyMatch[1]);
+        utter = utter.replace(qtyMatch[0], '').trim();
+      } else {
+        // Try to find a number word
+        for (const [word, num] of Object.entries(numberWords)) {
+          const regex = new RegExp("\\b" + word + "\\b");
+          if (regex.test(utter)) {
+            qty = num;
+            utter = utter.replace(regex, '').trim();
+            break;
+          }
         }
       }
+
+      // Try to find item name
+      let matchedItem = null;
+      for (const key of Object.keys(skuCatalog)) {
+        if (utter.includes(key)) {
+          matchedItem = skuCatalog[key];
+          break;
+        }
+      }
+
+      if (matchedItem) {
+        appendLine("ai", `Added ${matchedItem.name} (${matchedItem.sku}) x${qty} to your cart.`);
+        addToCart(matchedItem, qty);
+        return;
+      }
+
       // Cart summary
-      if (/cart|show cart|what's in my cart/.test(utterance)) {
+      if (/cart|show cart|what's in my cart/.test(utter)) {
         appendLine("ai", "Here is your current cart:");
         showCart();
         return;
       }
       // Specials
-      if (/special|deal/.test(utterance)) {
+      if (/special|deal/.test(utter)) {
         appendLine("ai", "Today's special: Ribeye Steak (SKU10010) - 20% off!");
         return;
       }
+
       appendLine("ai", "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.");
     }
 
