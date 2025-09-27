@@ -64,7 +64,7 @@
           try {
             const evt = JSON.parse(e.data);
 
-            // Print AI responses (if string or array)
+            // Print AI responses (can contain HTML for images/links)
             if (evt.type === "response.message.delta") {
               let chunk = "";
               if (Array.isArray(evt.delta)) {
