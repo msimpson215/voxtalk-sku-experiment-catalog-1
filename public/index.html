@@ -6,20 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
-  <style>
-    /* Simple style for clarity; keep or remove as you wish */
-    .app { max-width: 480px; margin: auto; padding: 2em; background: #f9f9f9; border-radius: 12px; box-shadow: 0 2px 8px #0002; }
-    .demo-label { color: #777; margin-bottom: 0.5em; }
-    h1 { font-size: 1.5em; margin: 0.5em 0 1em; }
-    #pttBtn { background: #3486eb; color: white; border: none; border-radius: 5px; padding: 1em 2em; font-size: 1.1em; cursor: pointer; }
-    #pttBtn.speaking { background: #66cdaa; }
-    .hint { color: #888; margin: 1em 0; }
-    #answer { background: #fff; border-radius: 6px; min-height: 160px; font-size: 1.1em; margin-bottom: 1em; padding: 1em; box-shadow: 0 1px 3px #0001; overflow-y: auto; max-height: 260px; }
-    .line { margin-bottom: 0.7em; }
-    .me { color: #3486eb; font-weight: bold; }
-    .ai { color: #66cdaa; font-weight: bold; }
-    .muted { color: #aaa; font-style: italic; }
-  </style>
 </head>
 <body>
   <div class="app">
@@ -76,16 +62,21 @@
           try {
             const evt = JSON.parse(e.data);
 
-            // Print AI responses
+            // Print AI responses (if string or array)
             if (evt.type === "response.message.delta") {
-              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              let chunk = "";
+              if (Array.isArray(evt.delta)) {
+                chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              } else if (typeof evt.delta === "string") {
+                chunk = evt.delta;
+              }
               if (chunk) appendLine("ai", chunk);
             }
 
-            // Print YOUR transcript in the conversation area
+            // Print YOUR transcript (evt.delta is a string)
             if (evt.type === "response.audio_transcript.delta") {
-              const transcript = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              if (transcript) appendLine("me", transcript); // <-- This prints your speech
+              const transcript = typeof evt.delta === "string" ? evt.delta : "";
+              if (transcript) appendLine("me", transcript);
               setSpeaking(true);
               clearTimeout(window._speakTimer);
               window._speakTimer = setTimeout(()=> {
