@@ -1,47 +1,158 @@
-body {
-  background: #f9f9f9;
-  margin: 0;
-  font-family: system-ui, sans-serif;
-}
-.app {
-  max-width: 900px;
-  margin: 2em auto;
-  padding: 2em;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 4px 24px #0003;
-}
-.demo-label { color: #777; margin-bottom: 0.5em; }
-h1 { font-size: 2em; margin: 0.5em 0 1em; }
-#pttBtn {
-  background: #3486eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 1em 2.5em;
-  font-size: 1.2em;
-  cursor: pointer;
-  margin-bottom: 1em;
-  box-shadow: 0 2px 8px #0002;
-}
-#pttBtn.speaking { background: #66cdaa; }
-.hint { color: #888; margin: 1em 0; }
-#answer {
-  background: #f4f8ff;
-  border-radius: 12px;
-  min-height: 200px;
-  font-size: 1.2em;
-  margin-bottom: 1.5em;
-  padding: 1.5em;
-  box-shadow: 0 1px 6px #0001;
-  overflow-wrap: anywhere;
-  max-height: 80vh;
-  overflow-y: auto;
-  width: 100%;
-}
-.line { margin-bottom: 1em; }
-.me { color: #3486eb; font-weight: bold; }
-.ai { color: #66cdaa; font-weight: bold; }
-.muted { color: #aaa; font-style: italic; }
-img { max-width: 100%; margin-top: 0.5em; border-radius: 6px; }
-a { color: #3486eb; text-decoration: underline; word-break: break-all; }
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>VoxTalk (Soothing Radiance)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <p class="demo-label">Soothing Radiance</p>
+    <h1>Talk to VoxTalk</h1>
+    <button id="pttBtn" aria-pressed="false">Start Talking</button>
+    <div class="hint">Click to Talk</div>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <audio id="remote" autoplay playsinline></audio>
+  </div>
+
+  <script>
+    const pttBtn   = document.getElementById('pttBtn');
+    const answerEl = document.getElementById('answer');
+    const rtAudio  = document.getElementById('remote');
+
+    function appendLine(role, text) {
+      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = `<span class="${role}">${role === 'me' ? 'You:' : 'AI:'}</span>
+                       <span class="text"> ${text}</span>`;
+      answerEl.appendChild(div);
+      answerEl.scrollTop = answerEl.scrollHeight;
+    }
+
+    function setSpeaking(on) { 
+      pttBtn.classList.toggle('speaking', on); 
+    }
+
+    function updateButton(talking) {
+      pttBtn.textContent = talking ? "Stop Talking" : "Start Talking";
+      pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
+    }
+
+    let transcriptBuffer = "";
+
+    async function initRealtime() {
+      try {
+        const s = await fetch("/session", { method:"POST" });
+        const { client_secret, model, voice } = await s.json();
+
+        const pc = new RTCPeerConnection();
+        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const micTrack = mic.getTracks()[0];
+        micTrack.enabled = false;
+        pc.addTrack(micTrack, mic);
+
+        pc.ontrack = (ev)=> {
+          rtAudio.srcObject = ev.streams[0];
+          rtAudio.play().catch(()=>{});
+        };
+
+        const dc = pc.createDataChannel("events");
+        dc.onmessage = (e)=> {
+          try {
+            const evt = JSON.parse(e.data);
+
+            // Print AI responses (can contain HTML for images/links)
+            if (evt.type === "response.message.delta") {
+              let chunk = "";
+              if (Array.isArray(evt.delta)) {
+                chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              } else if (typeof evt.delta === "string") {
+                chunk = evt.delta;
+              }
+              if (chunk) appendLine("ai", chunk);
+            }
+
+            // Accumulate transcript chunks
+            if (evt.type === "response.audio_transcript.delta") {
+              const transcript = typeof evt.delta === "string" ? evt.delta : "";
+              if (transcript) {
+                transcriptBuffer += transcript + " ";
+                setSpeaking(true);
+                clearTimeout(window._speakTimer);
+                window._speakTimer = setTimeout(()=> {
+                  setSpeaking(false);
+                }, 1000);
+              }
+            }
+
+            // When speech ends, print the full buffered transcript
+            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
+              setSpeaking(false);
+              clearTimeout(window._speakTimer);
+              if (transcriptBuffer.trim()) {
+                appendLine("me", transcriptBuffer.trim());
+                transcriptBuffer = "";
+              }
+            }
+
+          } catch(err) {
+            console.error("Parse error:", e.data, err);
+          }
+        };
+
+        let firstPlay = true;
+        rtAudio.addEventListener("playing", ()=> {
+          if (firstPlay) { firstPlay = false; return; }
+          setSpeaking(true);
+        });
+        rtAudio.addEventListener("pause", ()=> setSpeaking(false));
+        rtAudio.addEventListener("ended", ()=> setSpeaking(false));
+
+        const offer = await pc.createOffer({ offerToReceiveAudio:true });
+        await pc.setLocalDescription(offer);
+
+        const r = await fetch(
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
+          {
+            method:"POST",
+            headers: {
+              "Authorization":`Bearer ${client_secret.value}`,
+              "Content-Type":"application/sdp"
+            },
+            body: offer.sdp
+          }
+        );
+        const answer = { type:"answer", sdp: await r.text() };
+        await pc.setRemoteDescription(answer);
+
+        let talking = false;
+        function toggleTalking() {
+          talking = !talking;
+          micTrack.enabled = talking;
+          updateButton(talking);
+
+          if (talking) {
+            appendLine("me","(Listening...)");
+          } else {
+            setSpeaking(false);
+            rtAudio.pause();
+            rtAudio.currentTime = 0;
+            appendLine("me","(Stopped)");
+          }
+        }
+
+        pttBtn.onclick = toggleTalking;
+        updateButton(talking);
+
+      } catch(err) {
+        console.error("Realtime init failed", err);
+        appendLine("ai","Error initializing realtime voice. Please check your setup.");
+      }
+    }
+    initRealtime();
+  </script>
+</body>
+</html>
