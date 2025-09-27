@@ -7,10 +7,12 @@
 </head>
 <body>
   <div class="container">
+    <!-- Talk button -->
     <button id="talk-btn" class="talk-btn">
       🎙️ Talk / Stop
     </button>
 
+    <!-- Transcript box -->
     <div id="transcript" class="transcript">
       Your conversation will appear here
     </div>
@@ -23,18 +25,9 @@
     let isRecording = false;
     let audioCtx;
     let responseTimer;
-    let currentTextBuffer = ""; // ✅ New: buffer to collect deltas
 
     const talkBtn = document.getElementById("talk-btn");
     const transcriptEl = document.getElementById("transcript");
-
-    function appendTranscript(speaker, text) {
-      if (transcriptEl.innerHTML.includes("Your conversation will appear here")) {
-        transcriptEl.innerHTML = ""; // clear placeholder
-      }
-      transcriptEl.innerHTML += `<div><b>${speaker}:</b> ${text}</div>`;
-      transcriptEl.scrollTop = transcriptEl.scrollHeight;
-    }
 
     async function toggleRecording() {
       if (!isRecording) await startRecording();
@@ -55,20 +48,19 @@
           ws.onmessage = (ev) => {
             try {
               const msg = JSON.parse(ev.data);
-              switch (msg.type) {
-                case "output_text.delta":
-                  currentTextBuffer += msg.delta; // collect deltas
-                  break;
-                case "output_text.completed":
-                  appendTranscript("VoxTalk", currentTextBuffer);
-                  currentTextBuffer = "";
-                  break;
-                case "output_audio.delta":
-                  playAudioChunk(msg.delta);
-                  break;
-                case "response.error":
-                  console.error("Realtime error:", msg.error?.message);
-                  break;
+
+              // ✅ NEW: print VoxTalk text when received
+              if (msg.type === "output_text.delta") {
+                transcriptEl.innerHTML += `<div><b>VoxTalk:</b> ${msg.delta}</div>`;
+                transcriptEl.scrollTop = transcriptEl.scrollHeight;
+              }
+
+              if (msg.type === "output_audio.delta") {
+                playAudioChunk(msg.delta);
+              }
+
+              if (msg.type === "response.error") {
+                console.error("Realtime error:", msg.error?.message);
               }
             } catch {}
           };
@@ -89,7 +81,7 @@
               ws.send(JSON.stringify({
                 type: "response.create",
                 response: {
-                  modalities: ["audio", "text"], // ✅ make sure both are requested
+                  modalities: ["audio", "text"],
                   instructions: "Respond naturally and include text transcript.",
                   audio: { voice: "alloy" }
                 }
@@ -108,7 +100,7 @@
         };
 
         mediaRecorder.start();
-        appendTranscript("You", "<i>Listening…</i>");
+        transcriptEl.innerHTML += `<div><b>You:</b> <i>Listening…</i></div>`;
         isRecording = true;
         talkBtn.textContent = "🛑 Stop";
       } catch (err) {
@@ -170,7 +162,7 @@
           body: JSON.stringify({ messages }),
         });
         const textHeader = decodeURIComponent(r.headers.get("x-text") || "");
-        appendTranscript("VoxTalk (fallback)", textHeader);
+        transcriptEl.innerHTML += `<div><b>VoxTalk (fallback):</b> ${textHeader}</div>`;
         const blob = await r.blob();
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
