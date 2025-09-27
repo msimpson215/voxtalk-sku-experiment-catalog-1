@@ -35,7 +35,7 @@ h1 { font-size: 2em; margin: 0.5em 0 1em; }
   padding: 1.5em;
   box-shadow: 0 1px 6px #0001;
   overflow-wrap: anywhere;
-  max-height: 80vh;
+  max-height: 60vh;
   overflow-y: auto;
   width: 100%;
 }
@@ -45,3 +45,10 @@ h1 { font-size: 2em; margin: 0.5em 0 1em; }
 .muted { color: #aaa; font-style: italic; }
 img { max-width: 100%; margin-top: 0.5em; border-radius: 6px; }
 a { color: #3486eb; text-decoration: underline; word-break: break-all; }
+#cart-summary {
+  background: #e6f4ea;
+  border-radius: 8px;
+  padding: 1em;
+  margin-top: 1em;
+  font-size: 1.1em;
+}
