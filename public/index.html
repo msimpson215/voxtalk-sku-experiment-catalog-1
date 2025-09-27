@@ -4,6 +4,78 @@
   <meta charset="UTF-8" />
   <title>VoxTalk</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font: 16px system-ui, sans-serif;
+      margin: 24px;
+      background: #fafafa;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    /* Title above button */
+    .title {
+      font-size: 22px;
+      font-weight: 600;
+      color: black;
+      margin-bottom: 6px;
+    }
+    .tm {
+      font-size: 12px;
+      vertical-align: super;
+    }
+    /* Bigger blue button */
+    .talk-btn {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #007BFF;
+      color: white;
+      font-size: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+    }
+    .click-label {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.7;
+      margin-bottom: 2px;
+    }
+    /* Transcript box */
+    .transcript {
+      min-height: 150px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      overflow-y: auto;
+      max-height: 300px;
+      width: 100%;
+    }
+    /* Footer branding */
+    .footer {
+      position: fixed;
+      bottom: 10px;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+      background: rgba(0,0,0,0.4);
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -25,6 +97,157 @@
     PoweredByVoxTalk<span class="tm">™</span>
   </div>
 
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+  <!-- Your baseline JS logic, untouched except one extra line -->
+  <script type="module">
+    let ws;
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let audioCtx;
+    let responseTimer;
+
+    const talkBtn = document.getElementById("talk-btn");
+    const transcriptEl = document.getElementById("transcript");
+    const bannerEl = document.getElementById("alertBanner");
+    const clickLabel = document.getElementById("click-label");
+
+    function appendTranscript(speaker, text) {
+      transcriptEl.innerHTML += `<div><b>${speaker}:</b> ${text}</div>`;
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    function banner(msg, tone = "warn") {
+      if (!bannerEl) return console.error("⚠️ bannerEl missing in HTML");
+      bannerEl.style.display = "block";
+      bannerEl.textContent = msg;
+      bannerEl.className = tone === "ok" ? "banner ok" : "banner warn";
+    }
+
+    async function toggleRecording() {
+      if (!isRecording) await startRecording();
+      else stopRecording();
+    }
+
+    async function startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // 👇 Hide Click-to-Talk label after first click
+        if (clickLabel) clickLabel.style.display = "none";
+
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        ws = await connectWS();
+        if (!ws) banner("No session token — fallback only.", "warn");
+
+        if (ws) {
+          ws.onopen = () => console.log("✅ WS connected");
+          ws.onmessage = (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg.type === "output_text.delta") {
+                clearTimeout(responseTimer);
+                appendTranscript("VoxTalk", msg.delta);
+              }
+              if (msg.type === "output_audio.delta") {
+                clearTimeout(responseTimer);
+                playAudioChunk(msg.delta);
+              }
+              if (msg.type === "response.error") {
+                banner(`Realtime error: ${msg.error?.message}`, "warn");
+              }
+            } catch {}
+          };
+          ws.onerror = (e) => banner(`Realtime WS error: ${e?.message || e}`, "warn");
+          ws.onclose = () => console.log("🔌 WS closed — may fallback if no deltas.");
+        }
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          blob.arrayBuffer().then((buf) => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "input_audio_buffer.append", audio: arrayBufferToBase64(buf) }));
+              ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+              ws.send(JSON.stringify({
+                type: "response.create",
+                response: { modalities: ["audio", "text"], instructions: "Respond naturally and include text transcript.", audio: { voice: "alloy" } }
+              }));
+
+              clearTimeout(responseTimer);
+              responseTimer = setTimeout(() => {
+                banner("Realtime silent — using fallback.", "warn");
+                fallbackSpeak([{ role: "user", content: "(user spoke)" }]);
+              }, 3000);
+            } else {
+              banner("Realtime not available — fallback now.", "warn");
+              fallbackSpeak([{ role: "user", content: "(user spoke)" }]);
+            }
+          });
+        };
+
+        mediaRecorder.start();
+        appendTranscript("You", "<i>Listening…</i>");
+        isRecording = true;
+        talkBtn.textContent = "🛑 Stop";
+      } catch (err) {
+        banner(`Microphone error: ${err.message}`, "warn");
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+      isRecording = false;
+      talkBtn.textContent = "🎙️ Talk / Stop";
+    }
+
+    function arrayBufferToBase64(buffer) {
+      let binary = "";
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+
+    function playAudioChunk(base64Data) {
+      if (!audioCtx) audioCtx = new AudioContext();
+      const audioData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0)).buffer;
+      audioCtx.decodeAudioData(audioData).then((decoded) => {
+        const source = audioCtx.createBufferSource();
+        source.buffer = decoded;
+        source.connect(audioCtx.destination);
+        source.start();
+      });
+    }
+
+    talkBtn.addEventListener("click", toggleRecording);
+
+    async function connectWS() {
+      try {
+        const r = await fetch("/session", { method: "POST" });
+        const data = await r.json();
+        if (data.error) {
+          banner(`API Error: ${data.message}`, "warn");
+          return null;
+        }
+        const wsUrl = `wss://api.openai.com/v1/realtime?session=${
+          data.token.split("session=")[1] || data.token
+        }`;
+        const sock = new WebSocket(wsUrl, ["realtime"]);
+        sock.binaryType = "arraybuffer";
+        return sock;
+      } catch (err) {
+        banner(`Session fetch error: ${err.message}`, "warn");
+        return null;
+      }
+    }
+
+    async function fallbackSpeak(messages) {
+      try {
+        const r = await fetch("/chat-tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages }),
