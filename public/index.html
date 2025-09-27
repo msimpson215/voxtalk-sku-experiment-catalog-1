@@ -1,176 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>VoxTalk</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <title>VoxTalk (Soothing Radiance)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Talk button -->
-    <button id="talk-btn" class="talk-btn">
-      🎙️ Talk / Stop
-    </button>
-
-    <!-- Transcript box -->
-    <div id="transcript" class="transcript">
-      Your conversation will appear here
-    </div>
+  <div class="app">
+    <p class="demo-label">Soothing Radiance</p>
+    <h1>Talk to VoxTalk</h1>
+    <button id="pttBtn" aria-pressed="false"></button>
+    <div class="hint">Click to Talk</div>
+    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
+    <audio id="remote" autoplay playsinline></audio>
   </div>
 
-  <script type="module">
-    let ws;
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
-    let audioCtx;
-    let responseTimer;
+  <script>
+    const pttBtn   = document.getElementById('pttBtn');
+    const answerEl = document.getElementById('answer');
+    const rtAudio  = document.getElementById('remote');
 
-    const talkBtn = document.getElementById("talk-btn");
-    const transcriptEl = document.getElementById("transcript");
-
-    async function toggleRecording() {
-      if (!isRecording) await startRecording();
-      else stopRecording();
+    function appendLine(role, text) {
+      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = `<span class="${role}">${role==='me'?'You:':'AI:'}</span>
+                       <span class="text">${text}</span>`;
+      answerEl.appendChild(div);
+      answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    async function startRecording() {
+    function setSpeaking(on) { 
+      pttBtn.classList.toggle('speaking', on); 
+    }
+
+    async function initRealtime() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
+        const s = await fetch("/session", { method:"POST" });
+        const { client_secret, model, voice } = await s.json();
 
-        ws = await connectWS();
-        if (!ws) console.warn("⚠️ No session token — fallback only.");
+        const pc = new RTCPeerConnection();
+        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const micTrack = mic.getTracks()[0];
+        micTrack.enabled = false;
+        pc.addTrack(micTrack, mic);
 
-        if (ws) {
-          ws.onopen = () => console.log("✅ WS connected");
-          ws.onmessage = (ev) => {
-            try {
-              const msg = JSON.parse(ev.data);
-
-              // ✅ NEW: print VoxTalk text when received
-              if (msg.type === "output_text.delta") {
-                transcriptEl.innerHTML += `<div><b>VoxTalk:</b> ${msg.delta}</div>`;
-                transcriptEl.scrollTop = transcriptEl.scrollHeight;
-              }
-
-              if (msg.type === "output_audio.delta") {
-                playAudioChunk(msg.delta);
-              }
-
-              if (msg.type === "response.error") {
-                console.error("Realtime error:", msg.error?.message);
-              }
-            } catch {}
-          };
-          ws.onerror = (e) => console.error("WS error:", e);
-          ws.onclose = () => console.log("🔌 WS closed — may fallback if no deltas.");
-        }
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) audioChunks.push(e.data);
+        pc.ontrack = (ev)=> {
+          rtAudio.srcObject = ev.streams[0];
+          rtAudio.play().catch(()=>{});
         };
 
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(audioChunks, { type: "audio/webm" });
-          blob.arrayBuffer().then((buf) => {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: "input_audio_buffer.append", audio: arrayBufferToBase64(buf) }));
-              ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-              ws.send(JSON.stringify({
-                type: "response.create",
-                response: {
-                  modalities: ["audio", "text"],
-                  instructions: "Respond naturally and include text transcript.",
-                  audio: { voice: "alloy" }
-                }
-              }));
+        const dc = pc.createDataChannel("events");
+        dc.onmessage = (e)=> {
+          try {
+            const evt = JSON.parse(e.data);
+            console.log("EVENT:", evt.type, evt);
 
-              clearTimeout(responseTimer);
-              responseTimer = setTimeout(() => {
-                console.warn("Realtime silent — using fallback.");
-                fallbackSpeak([{ role: "user", content: "(user spoke)" }]);
-              }, 3000);
-            } else {
-              console.warn("Realtime not available — fallback now.");
-              fallbackSpeak([{ role: "user", content: "(user spoke)" }]);
+            if (evt.type === "response.message.delta") {
+              const chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
+              if (chunk) appendLine("ai", chunk);
             }
-          });
+
+            // 🔹 Halo ON when speech starts
+            if (evt.type === "response.audio_transcript.delta") {
+              setSpeaking(true);
+              clearTimeout(window._speakTimer);
+              window._speakTimer = setTimeout(()=> {
+                setSpeaking(false);
+              }, 1000); // 1s grace
+            }
+
+            // 🔹 Halo OFF when speech ends
+            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
+              setSpeaking(false);
+              clearTimeout(window._speakTimer);
+            }
+
+          } catch(err) {
+            console.error("Parse error:", e.data, err);
+          }
         };
 
-        mediaRecorder.start();
-        transcriptEl.innerHTML += `<div><b>You:</b> <i>Listening…</i></div>`;
-        isRecording = true;
-        talkBtn.textContent = "🛑 Stop";
-      } catch (err) {
-        console.error("Microphone error:", err.message);
-      }
-    }
-
-    function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-      isRecording = false;
-      talkBtn.textContent = "🎙️ Talk / Stop";
-    }
-
-    function arrayBufferToBase64(buffer) {
-      let binary = "";
-      const bytes = new Uint8Array(buffer);
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      return btoa(binary);
-    }
-
-    function playAudioChunk(base64Data) {
-      if (!audioCtx) audioCtx = new AudioContext();
-      const audioData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0)).buffer;
-      audioCtx.decodeAudioData(audioData).then((decoded) => {
-        const source = audioCtx.createBufferSource();
-        source.buffer = decoded;
-        source.connect(audioCtx.destination);
-        source.start();
-      });
-    }
-
-    talkBtn.addEventListener("click", toggleRecording);
-
-    async function connectWS() {
-      try {
-        const r = await fetch("/session", { method: "POST" });
-        const data = await r.json();
-        if (data.error) {
-          console.error(`API Error: ${data.message}`);
-          return null;
-        }
-        const wsUrl = `wss://api.openai.com/v1/realtime?session=${
-          data.token.split("session=")[1] || data.token
-        }`;
-        const sock = new WebSocket(wsUrl, ["realtime"]);
-        sock.binaryType = "arraybuffer";
-        return sock;
-      } catch (err) {
-        console.error(`Session fetch error: ${err.message}`);
-        return null;
-      }
-    }
-
-    async function fallbackSpeak(messages) {
-      try {
-        const r = await fetch("/chat-tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages }),
+        // Fallback audio events
+        let firstPlay = true;
+        rtAudio.addEventListener("playing", ()=> {
+          if (firstPlay) { firstPlay = false; return; }
+          setSpeaking(true);
         });
-        const textHeader = decodeURIComponent(r.headers.get("x-text") || "");
-        transcriptEl.innerHTML += `<div><b>VoxTalk (fallback):</b> ${textHeader}</div>`;
-        const blob = await r.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        await audio.play();
-      } catch (err) {
-        console.error("Fallback failed — check server logs.", err.message);
+        rtAudio.addEventListener("pause", ()=> setSpeaking(false));
+        rtAudio.addEventListener("ended", ()=> setSpeaking(false));
+
+        const offer = await pc.createOffer({ offerToReceiveAudio:true });
+        await pc.setLocalDescription(offer);
+
+        const r = await fetch(
+          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
+          {
+            method:"POST",
+            headers: {
+              "Authorization":`Bearer ${client_secret.value}`,
+              "Content-Type":"application/sdp"
+            },
+            body: offer.sdp
+          }
+        );
+        const answer = { type:"answer", sdp: await r.text() };
+        await pc.setRemoteDescription(answer);
+
+        let talking = false;
+        pttBtn.onclick = () => {
+          talking = !talking;
+          micTrack.enabled = talking;
+
+          if (talking) {
+            appendLine("me","(Listening...)");
+          } else {
+            setSpeaking(false);
+            rtAudio.pause();
+            rtAudio.currentTime = 0;
+            appendLine("me","(Stopped)");
+          }
+        };
+
+      } catch(err) {
+        console.error("Realtime init failed", err);
       }
     }
+    initRealtime();
   </script>
 </body>
 </html>
