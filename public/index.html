@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Grocery Demo - Voice Enabled</title>
+  <title>VoxTalk Grocery Assistant (Conversational Voice Demo)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">Grocery Assistant (Voice Demo)</p>
+    <p class="demo-label">Grocery Assistant (Conversational Voice Demo)</p>
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false">Start Talking</button>
-    <div class="hint">Click <b>Start Talking</b> and say something like:<br>
-      "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?"
+    <div class="hint">Click <b>Start Talking</b> and just talk!<br>
+      Say: "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?", "Add ribeye steak", "Add milk", etc.
     </div>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
@@ -122,45 +122,71 @@
         }
       }
 
-      // Try to find item name
+      // Try to find item name, allow "ribeye" to match "ribeye steak"
       let matchedItem = null;
       for (const key of Object.keys(skuCatalog)) {
         if (utter.includes(key)) {
           matchedItem = skuCatalog[key];
           break;
         }
+        // Fuzzy match for "ribeye" => "ribeye steak"
+        if (key === "ribeye steak" && utter.includes("ribeye")) {
+          matchedItem = skuCatalog[key];
+          break;
+        }
       }
 
+      let aiReply = "";
       if (matchedItem) {
-        appendLine("ai", `Added ${matchedItem.name} (${matchedItem.sku}) x${qty} to your cart.`);
+        aiReply = `Added ${matchedItem.name} (${matchedItem.sku}) x${qty} to your cart.`;
+        appendLine("ai", aiReply);
         addToCart(matchedItem, qty);
+        speak(aiReply);
         return;
       }
 
       // Cart summary
       if (/cart|show cart|what's in my cart/.test(utter)) {
-        appendLine("ai", "Here is your current cart:");
+        aiReply = "Here is your current cart.";
+        appendLine("ai", aiReply);
         showCart();
+        speak(aiReply);
         return;
       }
       // Specials
       if (/special|deal/.test(utter)) {
-        appendLine("ai", "Today's special: Ribeye Steak (SKU10010) - 20% off!");
+        aiReply = "Today's special: Ribeye Steak (SKU10010) - 20% off!";
+        appendLine("ai", aiReply);
+        speak(aiReply);
         return;
       }
 
-      appendLine("ai", "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.");
+      aiReply = "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.";
+      appendLine("ai", aiReply);
+      speak(aiReply);
     }
 
-    // --- Web Speech API for voice input ---
+    // --- SPEECH SYNTHESIS (AI talks back) ---
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        const utter = new window.SpeechSynthesisUtterance(text);
+        utter.rate = 1.1;
+        utter.pitch = 1.1;
+        window.speechSynthesis.cancel(); // Stop any current speech
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    // --- CONTINUOUS VOICE CONVERSATION ---
     let recognition;
     let recognizing = false;
+    let keepListening = false;
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
       recognition.lang = "en-US";
-      recognition.continuous = false;
+      recognition.continuous = false; // Single utterance, but we restart automatically
       recognition.interimResults = false;
 
       recognition.onstart = function() {
@@ -173,6 +199,10 @@
         updateButton(false);
         appendLine("me", "(Stopped)");
         recognizing = false;
+        // If user wants continuous, restart listening
+        if (keepListening) {
+          setTimeout(() => { recognition.start(); recognizing = true; }, 500);
+        }
       };
       recognition.onresult = function(event) {
         if (event.results.length) {
@@ -183,12 +213,16 @@
       };
 
       pttBtn.onclick = function() {
-        if (recognizing) {
+        if (recognizing || keepListening) {
+          keepListening = false;
           recognition.stop();
           recognizing = false;
+          updateButton(false);
         } else {
+          keepListening = true;
           recognition.start();
           recognizing = true;
+          updateButton(true);
         }
       };
     } else {
