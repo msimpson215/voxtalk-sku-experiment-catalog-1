@@ -1,177 +1,54 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>VoxTalk Grocery Demo - Voice Enabled</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="app">
-    <p class="demo-label">Grocery Assistant (Voice Demo)</p>
-    <h1>Talk to VoxTalk</h1>
-    <button id="pttBtn" aria-pressed="false">Start Talking</button>
-    <div class="hint">Click <b>Start Talking</b> and say something like:<br>
-      "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?"
-    </div>
-    <div id="answer"><div class="muted">Conversation will appear here.</div></div>
-    <audio id="remote" autoplay playsinline></audio>
-    <div id="cart-summary"></div>
-  </div>
-
-  <script>
-    const pttBtn   = document.getElementById('pttBtn');
-    const answerEl = document.getElementById('answer');
-    const cartSummary = document.getElementById('cart-summary');
-
-    // --- SKU CATALOG ---
-    const skuCatalog = {
-      "bananas": { sku: "SKU10001", name: "Bananas" },
-      "milk": { sku: "SKU10002", name: "Milk" },
-      "pineapple": { sku: "SKU10003", name: "Pineapple" },
-      "lettuce": { sku: "SKU10004", name: "Lettuce" },
-      "salmon with skin": { sku: "SKU10005", name: "Salmon (with skin)" },
-      "salmon no skin": { sku: "SKU10006", name: "Salmon (no skin)" },
-      "ketchup": { sku: "SKU10007", name: "Ketchup" },
-      "beer": { sku: "SKU10008", name: "Beer" },
-      "steak": { sku: "SKU10009", name: "Steak" },
-      "ribeye steak": { sku: "SKU10010", name: "Ribeye Steak" },
-      "special steak": { sku: "SKU10011", name: "Special Steak" },
-      "eggs": { sku: "SKU10012", name: "Eggs" },
-      "apple": { sku: "SKU10013", name: "Apple" },
-      "cucumber": { sku: "SKU10014", name: "Cucumber" },
-      "orange juice": { sku: "SKU10015", name: "Orange Juice" },
-      "cheese": { sku: "SKU10016", name: "Cheese" },
-      "butter": { sku: "SKU10017", name: "Butter" },
-      "tomatoes": { sku: "SKU10018", name: "Tomatoes" },
-      "chicken breast": { sku: "SKU10019", name: "Chicken Breast" },
-      "potatoes": { sku: "SKU10020", name: "Potatoes" }
-    };
-
-    // --- CART LOGIC ---
-    let cart = [];
-
-    function addToCart(item, qty=1) {
-      let entry = cart.find(e => e.sku === item.sku);
-      if (!entry) {
-        cart.push({ sku: item.sku, name: item.name, qty });
-      } else {
-        entry.qty += qty;
-      }
-      showCart();
-    }
-
-    function showCart() {
-      if (!cart.length) {
-        cartSummary.innerHTML = "<b>Your cart is empty.</b>";
-        return;
-      }
-      cartSummary.innerHTML = "<b>Your cart:</b><ul>" +
-        cart.map(e => `<li>${e.name} (${e.sku}) x${e.qty}</li>`).join("") +
-        "</ul>";
-    }
-
-    // --- CHAT DISPLAY ---
-    function appendLine(role, text) {
-      if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
-      const div = document.createElement('div');
-      div.className = 'line';
-      div.innerHTML = `<span class="${role}">${role === 'me' ? 'You:' : 'AI:'}</span>
-                       <span class="text"> ${text}</span>`;
-      answerEl.appendChild(div);
-      answerEl.scrollTop = answerEl.scrollHeight;
-    }
-
-    function setSpeaking(on) { 
-      pttBtn.classList.toggle('speaking', on); 
-    }
-
-    function updateButton(talking) {
-      pttBtn.textContent = talking ? "Stop Talking" : "Start Talking";
-      pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
-    }
-
-    // --- BASIC "AI" PARSER FOR DEMO ---
-    function processUtterance(utterance) {
-      // Simple match for "I want X bananas", "Add milk", etc.
-      let m = utterance.match(/(?:want|add|put|need|buy)?\s*(\d+)?\s*([a-z\s]+)(?: to my cart)?/i);
-      if (m) {
-        let qty = m[1] ? parseInt(m[1]) : 1;
-        let item = m[2].trim().toLowerCase();
-        // Try to match with/without skin for salmon
-        if (item.includes("salmon")) {
-          if (item.includes("no skin")) item = "salmon no skin";
-          else if (item.includes("with skin")) item = "salmon with skin";
-          else item = "salmon with skin"; // default
-        }
-        let found = skuCatalog[item];
-        if (found) {
-          appendLine("ai", `Added ${found.name} (${found.sku}) x${qty} to your cart.`);
-          addToCart(found, qty);
-          return;
-        }
-      }
-      // Cart summary
-      if (/cart|show cart|what's in my cart/.test(utterance)) {
-        appendLine("ai", "Here is your current cart:");
-        showCart();
-        return;
-      }
-      // Specials
-      if (/special|deal/.test(utterance)) {
-        appendLine("ai", "Today's special: Ribeye Steak (SKU10010) - 20% off!");
-        return;
-      }
-      appendLine("ai", "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.");
-    }
-
-    // --- Web Speech API for voice input ---
-    let recognition;
-    let recognizing = false;
-
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = function() {
-        setSpeaking(true);
-        updateButton(true);
-        appendLine("me", "(Listening...)");
-      };
-      recognition.onend = function() {
-        setSpeaking(false);
-        updateButton(false);
-        appendLine("me", "(Stopped)");
-        recognizing = false;
-      };
-      recognition.onresult = function(event) {
-        if (event.results.length) {
-          const transcript = event.results[0][0].transcript;
-          appendLine("me", transcript);
-          processUtterance(transcript);
-        }
-      };
-
-      pttBtn.onclick = function() {
-        if (recognizing) {
-          recognition.stop();
-          recognizing = false;
-        } else {
-          recognition.start();
-          recognizing = true;
-        }
-      };
-    } else {
-      pttBtn.disabled = true;
-      pttBtn.textContent = "Voice not supported";
-      appendLine("ai", "Sorry, your browser does not support speech recognition.");
-    }
-
-    showCart();
-  </script>
-</body>
-</html>
+body {
+  background: #f9f9f9;
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 900px;
+  margin: 2em auto;
+  padding: 2em;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px #0003;
+}
+.demo-label { color: #777; margin-bottom: 0.5em; }
+h1 { font-size: 2em; margin: 0.5em 0 1em; }
+#pttBtn {
+  background: #3486eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 1em 2.5em;
+  font-size: 1.2em;
+  cursor: pointer;
+  margin-bottom: 1em;
+  box-shadow: 0 2px 8px #0002;
+}
+#pttBtn.speaking { background: #66cdaa; }
+.hint { color: #888; margin: 1em 0; }
+#answer {
+  background: #f4f8ff;
+  border-radius: 12px;
+  min-height: 200px;
+  font-size: 1.2em;
+  margin-bottom: 1.5em;
+  padding: 1.5em;
+  box-shadow: 0 1px 6px #0001;
+  overflow-wrap: anywhere;
+  max-height: 60vh;
+  overflow-y: auto;
+  width: 100%;
+}
+.line { margin-bottom: 1em; }
+.me { color: #3486eb; font-weight: bold; }
+.ai { color: #66cdaa; font-weight: bold; }
+.muted { color: #aaa; font-style: italic; }
+img { max-width: 100%; margin-top: 0.5em; border-radius: 6px; }
+a { color: #3486eb; text-decoration: underline; word-break: break-all; }
+#cart-summary {
+  background: #e6f4ea;
+  border-radius: 8px;
+  padding: 1em;
+  margin-top: 1em;
+  font-size: 1.1em;
+}
