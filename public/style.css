@@ -4,8 +4,22 @@ h1 { font-size: 1.5em; margin: 0.5em 0 1em; }
 #pttBtn { background: #3486eb; color: white; border: none; border-radius: 5px; padding: 1em 2em; font-size: 1.1em; cursor: pointer; }
 #pttBtn.speaking { background: #66cdaa; }
 .hint { color: #888; margin: 1em 0; }
-#answer { background: #fff; border-radius: 6px; min-height: 160px; font-size: 1.1em; margin-bottom: 1em; padding: 1em; box-shadow: 0 1px 3px #0001; overflow-y: auto; max-height: 260px; }
+#answer {
+  background: #fff;
+  border-radius: 6px;
+  min-height: 160px;
+  font-size: 1.1em;
+  margin-bottom: 1em;
+  padding: 1em;
+  box-shadow: 0 1px 3px #0001;
+  overflow-wrap: anywhere;
+  /* Expand as needed */
+  max-height: none;
+  overflow-y: auto;
+}
 .line { margin-bottom: 0.7em; }
 .me { color: #3486eb; font-weight: bold; }
 .ai { color: #66cdaa; font-weight: bold; }
 .muted { color: #aaa; font-style: italic; }
+img { max-width: 100%; margin-top: 0.5em; border-radius: 4px; }
+a { color: #3486eb; text-decoration: underline; }
