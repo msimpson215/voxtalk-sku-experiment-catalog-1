@@ -49,8 +49,9 @@
             try {
               const msg = JSON.parse(ev.data);
 
-              // ✅ NEW: print VoxTalk text when received
+              // ✅ NEW: debug log to confirm text deltas are received
               if (msg.type === "output_text.delta") {
+                console.log("📜 Received text delta:", msg.delta);
                 transcriptEl.innerHTML += `<div><b>VoxTalk:</b> ${msg.delta}</div>`;
                 transcriptEl.scrollTop = transcriptEl.scrollHeight;
               }
