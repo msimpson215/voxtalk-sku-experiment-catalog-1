@@ -13,19 +13,18 @@
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false">Start Talking</button>
     <div class="hint">Click <b>Start Talking</b> and just talk!<br>
-      Try: "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?", "Add ribeye steak", "Add your special", "Add milk", etc.
+      Try: "Hello", "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?", "Add ribeye steak", "Add your special", "Add milk", etc.
     </div>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
     <div id="cart-summary"></div>
   </div>
-
   <script>
     const pttBtn   = document.getElementById('pttBtn');
     const answerEl = document.getElementById('answer');
     const cartSummary = document.getElementById('cart-summary');
 
-    // --- SKU CATALOG & SPECIALS ---
+    // SKU catalog
     const skuCatalog = {
       "bananas": { sku: "SKU10001", name: "Bananas" },
       "milk": { sku: "SKU10002", name: "Milk" },
@@ -50,9 +49,8 @@
     };
     const SPECIAL_ITEM_KEY = "ribeye steak";
 
-    // --- CART LOGIC ---
+    // Cart logic
     let cart = [];
-
     function addToCart(item, qty=1) {
       let entry = cart.find(e => e.sku === item.sku);
       if (!entry) {
@@ -62,7 +60,6 @@
       }
       showCart();
     }
-
     function showCart() {
       if (!cart.length) {
         cartSummary.innerHTML = "<b>Your cart is empty.</b>";
@@ -73,7 +70,6 @@
         "</ul>";
     }
 
-    // --- CHAT DISPLAY ---
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
       const div = document.createElement('div');
@@ -84,18 +80,14 @@
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    function setSpeaking(on) { 
-      pttBtn.classList.toggle('speaking', on); 
-    }
-
+    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
     function updateButton(talking) {
       pttBtn.textContent = talking ? "Stop Talking" : "Start Talking";
       pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
     }
 
-    // --- IMPROVED "AI" PARSER FOR VOICE ---
+    // AI parser for voice, with greetings and more friendly logic
     function processUtterance(utterance) {
-      // Map number words to digits
       const numberWords = {
         "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
         "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
@@ -103,16 +95,23 @@
         "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20
       };
 
-      let utter = utterance.toLowerCase().replace(/-/g, ' ');
+      let utter = utterance.toLowerCase().replace(/-/g, ' ').trim();
 
-      // Try to find a digit in the utterance
+      // Friendly greetings
+      if (/^(hello|hi|hey|good morning|good afternoon|good evening|how are you|what's up|thanks|thank you)$/.test(utter)) {
+        const aiReply = "Hello! How can I help you with your groceries today?";
+        appendLine("ai", aiReply);
+        speak(aiReply);
+        return;
+      }
+
+      // Try to find a digit or number word
       let qty = 1;
       let qtyMatch = utter.match(/\b(\d+)\b/);
       if (qtyMatch) {
         qty = parseInt(qtyMatch[1]);
         utter = utter.replace(qtyMatch[0], '').trim();
       } else {
-        // Try to find a number word
         for (const [word, num] of Object.entries(numberWords)) {
           const regex = new RegExp("\\b" + word + "\\b");
           if (regex.test(utter)) {
@@ -123,15 +122,12 @@
         }
       }
 
-      // Special handling for "special" and "ribeye"
+      // Handle "special" and "ribeye"
       let isSpecial = /special/.test(utter) || /ribeye/.test(utter);
       let matchedItem = null;
-
-      // "Add your special" or "Add special" or "Add ribeye"
       if (isSpecial && /(add|put|buy|need|want)/.test(utter)) {
         matchedItem = skuCatalog[SPECIAL_ITEM_KEY];
       } else {
-        // Try to match item name
         for (const key of Object.keys(skuCatalog)) {
           if (utter.includes(key)) {
             matchedItem = skuCatalog[key];
@@ -176,18 +172,18 @@
       speak(aiReply);
     }
 
-    // --- SPEECH SYNTHESIS (AI talks back) ---
+    // Speech Synthesis (AI talks back)
     function speak(text) {
       if ('speechSynthesis' in window) {
         const utter = new window.SpeechSynthesisUtterance(text);
         utter.rate = 1.07;
         utter.pitch = 1.08;
-        window.speechSynthesis.cancel(); // Stop any current speech
+        window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utter);
       }
     }
 
-    // --- CONTINUOUS VOICE CONVERSATION ---
+    // Continuous Voice Conversation
     let recognition;
     let recognizing = false;
     let keepListening = false;
@@ -196,7 +192,7 @@
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
       recognition.lang = "en-US";
-      recognition.continuous = false; // Single utterance, but we restart automatically
+      recognition.continuous = false;
       recognition.interimResults = false;
 
       recognition.onstart = function() {
@@ -209,7 +205,6 @@
         updateButton(false);
         appendLine("me", "(Stopped)");
         recognizing = false;
-        // If user wants continuous, restart listening
         if (keepListening) {
           setTimeout(() => { recognition.start(); recognizing = true; }, 500);
         }
