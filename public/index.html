@@ -41,6 +41,8 @@
       pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
     }
 
+    let transcriptBuffer = "";
+
     async function initRealtime() {
       try {
         const s = await fetch("/session", { method:"POST" });
@@ -73,21 +75,27 @@
               if (chunk) appendLine("ai", chunk);
             }
 
-            // Print YOUR transcript (evt.delta is a string)
+            // Accumulate transcript chunks
             if (evt.type === "response.audio_transcript.delta") {
               const transcript = typeof evt.delta === "string" ? evt.delta : "";
-              if (transcript) appendLine("me", transcript);
-              setSpeaking(true);
-              clearTimeout(window._speakTimer);
-              window._speakTimer = setTimeout(()=> {
-                setSpeaking(false);
-              }, 1000);
+              if (transcript) {
+                transcriptBuffer += transcript + " ";
+                setSpeaking(true);
+                clearTimeout(window._speakTimer);
+                window._speakTimer = setTimeout(()=> {
+                  setSpeaking(false);
+                }, 1000);
+              }
             }
 
-            // Halo OFF when speech ends
+            // When speech ends, print the full buffered transcript
             if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
               setSpeaking(false);
               clearTimeout(window._speakTimer);
+              if (transcriptBuffer.trim()) {
+                appendLine("me", transcriptBuffer.trim());
+                transcriptBuffer = "";
+              }
             }
 
           } catch(err) {
