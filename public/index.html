@@ -2,17 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Grocery Demo</title>
+  <title>VoxTalk Grocery Demo - Voice Enabled</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">Grocery Assistant</p>
+    <p class="demo-label">Grocery Assistant (Voice Demo)</p>
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false">Start Talking</button>
-    <div class="hint">Say things like "I want 5 bananas" or "Add salmon with skin"</div>
+    <div class="hint">Click <b>Start Talking</b> and say something like:<br>
+      "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?"
+    </div>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
     <div id="cart-summary"></div>
@@ -21,7 +23,6 @@
   <script>
     const pttBtn   = document.getElementById('pttBtn');
     const answerEl = document.getElementById('answer');
-    const rtAudio  = document.getElementById('remote');
     const cartSummary = document.getElementById('cart-summary');
 
     // --- SKU CATALOG ---
@@ -91,8 +92,6 @@
       pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
     }
 
-    let transcriptBuffer = "";
-
     // --- BASIC "AI" PARSER FOR DEMO ---
     function processUtterance(utterance) {
       // Simple match for "I want X bananas", "Add milk", etc.
@@ -127,23 +126,52 @@
       appendLine("ai", "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.");
     }
 
-    // --- DEMO: Use a text box for input ---
-    let demoInput = document.createElement('input');
-    demoInput.type = 'text';
-    demoInput.placeholder = "Type something (e.g. Add 3 bananas)";
-    demoInput.style = "width:100%;margin-top:1em;padding:0.5em;font-size:1em;border-radius:6px;border:1px solid #ccc";
-    answerEl.parentNode.insertBefore(demoInput, cartSummary);
-    demoInput.addEventListener("keydown", e=>{
-      if (e.key === "Enter" && demoInput.value.trim()) {
-        let text = demoInput.value.trim();
-        appendLine("me", text);
-        processUtterance(text);
-        demoInput.value = "";
-      }
-    });
+    // --- Web Speech API for voice input ---
+    let recognition;
+    let recognizing = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = function() {
+        setSpeaking(true);
+        updateButton(true);
+        appendLine("me", "(Listening...)");
+      };
+      recognition.onend = function() {
+        setSpeaking(false);
+        updateButton(false);
+        appendLine("me", "(Stopped)");
+        recognizing = false;
+      };
+      recognition.onresult = function(event) {
+        if (event.results.length) {
+          const transcript = event.results[0][0].transcript;
+          appendLine("me", transcript);
+          processUtterance(transcript);
+        }
+      };
+
+      pttBtn.onclick = function() {
+        if (recognizing) {
+          recognition.stop();
+          recognizing = false;
+        } else {
+          recognition.start();
+          recognizing = true;
+        }
+      };
+    } else {
+      pttBtn.disabled = true;
+      pttBtn.textContent = "Voice not supported";
+      appendLine("ai", "Sorry, your browser does not support speech recognition.");
+    }
 
     showCart();
-    // If you want to connect voice, call processUtterance(transcriptBuffer.trim()) when speech ends.
   </script>
 </body>
 </html>
