@@ -13,7 +13,7 @@
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false">Start Talking</button>
     <div class="hint">Click <b>Start Talking</b> and just talk!<br>
-      Say: "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?", "Add ribeye steak", "Add milk", etc.
+      Try: "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?", "Add ribeye steak", "Add your special", "Add milk", etc.
     </div>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
@@ -25,7 +25,7 @@
     const answerEl = document.getElementById('answer');
     const cartSummary = document.getElementById('cart-summary');
 
-    // --- SKU CATALOG ---
+    // --- SKU CATALOG & SPECIALS ---
     const skuCatalog = {
       "bananas": { sku: "SKU10001", name: "Bananas" },
       "milk": { sku: "SKU10002", name: "Milk" },
@@ -48,6 +48,7 @@
       "chicken breast": { sku: "SKU10019", name: "Chicken Breast" },
       "potatoes": { sku: "SKU10020", name: "Potatoes" }
     };
+    const SPECIAL_ITEM_KEY = "ribeye steak";
 
     // --- CART LOGIC ---
     let cart = [];
@@ -122,23 +123,26 @@
         }
       }
 
-      // Try to find item name, allow "ribeye" to match "ribeye steak"
+      // Special handling for "special" and "ribeye"
+      let isSpecial = /special/.test(utter) || /ribeye/.test(utter);
       let matchedItem = null;
-      for (const key of Object.keys(skuCatalog)) {
-        if (utter.includes(key)) {
-          matchedItem = skuCatalog[key];
-          break;
-        }
-        // Fuzzy match for "ribeye" => "ribeye steak"
-        if (key === "ribeye steak" && utter.includes("ribeye")) {
-          matchedItem = skuCatalog[key];
-          break;
+
+      // "Add your special" or "Add special" or "Add ribeye"
+      if (isSpecial && /(add|put|buy|need|want)/.test(utter)) {
+        matchedItem = skuCatalog[SPECIAL_ITEM_KEY];
+      } else {
+        // Try to match item name
+        for (const key of Object.keys(skuCatalog)) {
+          if (utter.includes(key)) {
+            matchedItem = skuCatalog[key];
+            break;
+          }
         }
       }
 
       let aiReply = "";
       if (matchedItem) {
-        aiReply = `Added ${matchedItem.name} (${matchedItem.sku}) x${qty} to your cart.`;
+        aiReply = `No problem! I've added ${matchedItem.name} (SKU ${matchedItem.sku}) x${qty} to your cart. Anything else I can help you find?`;
         appendLine("ai", aiReply);
         addToCart(matchedItem, qty);
         speak(aiReply);
@@ -147,7 +151,13 @@
 
       // Cart summary
       if (/cart|show cart|what's in my cart/.test(utter)) {
-        aiReply = "Here is your current cart.";
+        if (cart.length) {
+          aiReply = "Here's what's in your cart: " +
+            cart.map(e => `${e.name} (SKU ${e.sku}), quantity ${e.qty}`).join(", ") +
+            ". What else would you like to add?";
+        } else {
+          aiReply = "Your cart is currently empty. What would you like to add?";
+        }
         appendLine("ai", aiReply);
         showCart();
         speak(aiReply);
@@ -155,13 +165,13 @@
       }
       // Specials
       if (/special|deal/.test(utter)) {
-        aiReply = "Today's special: Ribeye Steak (SKU10010) - 20% off!";
+        aiReply = "Today's special is Ribeye Steak (SKU10010), 20% off! Would you like to add it to your cart?";
         appendLine("ai", aiReply);
         speak(aiReply);
         return;
       }
 
-      aiReply = "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.";
+      aiReply = "Sorry, I didn't catch that. You can say things like 'Add 3 bananas', 'Add your special', or 'Show cart'.";
       appendLine("ai", aiReply);
       speak(aiReply);
     }
@@ -170,8 +180,8 @@
     function speak(text) {
       if ('speechSynthesis' in window) {
         const utter = new window.SpeechSynthesisUtterance(text);
-        utter.rate = 1.1;
-        utter.pitch = 1.1;
+        utter.rate = 1.07;
+        utter.pitch = 1.08;
         window.speechSynthesis.cancel(); // Stop any current speech
         window.speechSynthesis.speak(utter);
       }
