@@ -2,26 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk (Soothing Radiance)</title>
+  <title>VoxTalk Grocery Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">Soothing Radiance</p>
+    <p class="demo-label">Grocery Assistant</p>
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false">Start Talking</button>
-    <div class="hint">Click to Talk</div>
+    <div class="hint">Say things like "I want 5 bananas" or "Add salmon with skin"</div>
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
     <audio id="remote" autoplay playsinline></audio>
+    <div id="cart-summary"></div>
   </div>
 
   <script>
     const pttBtn   = document.getElementById('pttBtn');
     const answerEl = document.getElementById('answer');
     const rtAudio  = document.getElementById('remote');
+    const cartSummary = document.getElementById('cart-summary');
 
+    // --- SKU CATALOG ---
+    const skuCatalog = {
+      "bananas": { sku: "SKU10001", name: "Bananas" },
+      "milk": { sku: "SKU10002", name: "Milk" },
+      "pineapple": { sku: "SKU10003", name: "Pineapple" },
+      "lettuce": { sku: "SKU10004", name: "Lettuce" },
+      "salmon with skin": { sku: "SKU10005", name: "Salmon (with skin)" },
+      "salmon no skin": { sku: "SKU10006", name: "Salmon (no skin)" },
+      "ketchup": { sku: "SKU10007", name: "Ketchup" },
+      "beer": { sku: "SKU10008", name: "Beer" },
+      "steak": { sku: "SKU10009", name: "Steak" },
+      "ribeye steak": { sku: "SKU10010", name: "Ribeye Steak" },
+      "special steak": { sku: "SKU10011", name: "Special Steak" },
+      "eggs": { sku: "SKU10012", name: "Eggs" },
+      "apple": { sku: "SKU10013", name: "Apple" },
+      "cucumber": { sku: "SKU10014", name: "Cucumber" },
+      "orange juice": { sku: "SKU10015", name: "Orange Juice" },
+      "cheese": { sku: "SKU10016", name: "Cheese" },
+      "butter": { sku: "SKU10017", name: "Butter" },
+      "tomatoes": { sku: "SKU10018", name: "Tomatoes" },
+      "chicken breast": { sku: "SKU10019", name: "Chicken Breast" },
+      "potatoes": { sku: "SKU10020", name: "Potatoes" }
+    };
+
+    // --- CART LOGIC ---
+    let cart = [];
+
+    function addToCart(item, qty=1) {
+      let entry = cart.find(e => e.sku === item.sku);
+      if (!entry) {
+        cart.push({ sku: item.sku, name: item.name, qty });
+      } else {
+        entry.qty += qty;
+      }
+      showCart();
+    }
+
+    function showCart() {
+      if (!cart.length) {
+        cartSummary.innerHTML = "<b>Your cart is empty.</b>";
+        return;
+      }
+      cartSummary.innerHTML = "<b>Your cart:</b><ul>" +
+        cart.map(e => `<li>${e.name} (${e.sku}) x${e.qty}</li>`).join("") +
+        "</ul>";
+    }
+
+    // --- CHAT DISPLAY ---
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
       const div = document.createElement('div');
@@ -43,116 +93,57 @@
 
     let transcriptBuffer = "";
 
-    async function initRealtime() {
-      try {
-        const s = await fetch("/session", { method:"POST" });
-        const { client_secret, model, voice } = await s.json();
-
-        const pc = new RTCPeerConnection();
-        const mic = await navigator.mediaDevices.getUserMedia({ audio:true });
-        const micTrack = mic.getTracks()[0];
-        micTrack.enabled = false;
-        pc.addTrack(micTrack, mic);
-
-        pc.ontrack = (ev)=> {
-          rtAudio.srcObject = ev.streams[0];
-          rtAudio.play().catch(()=>{});
-        };
-
-        const dc = pc.createDataChannel("events");
-        dc.onmessage = (e)=> {
-          try {
-            const evt = JSON.parse(e.data);
-
-            // Print AI responses (can contain HTML for images/links)
-            if (evt.type === "response.message.delta") {
-              let chunk = "";
-              if (Array.isArray(evt.delta)) {
-                chunk = evt.delta.map(d=>d.content?.[0]?.text||"").join("");
-              } else if (typeof evt.delta === "string") {
-                chunk = evt.delta;
-              }
-              if (chunk) appendLine("ai", chunk);
-            }
-
-            // Accumulate transcript chunks
-            if (evt.type === "response.audio_transcript.delta") {
-              const transcript = typeof evt.delta === "string" ? evt.delta : "";
-              if (transcript) {
-                transcriptBuffer += transcript + " ";
-                setSpeaking(true);
-                clearTimeout(window._speakTimer);
-                window._speakTimer = setTimeout(()=> {
-                  setSpeaking(false);
-                }, 1000);
-              }
-            }
-
-            // When speech ends, print the full buffered transcript
-            if (evt.type === "response.audio.done" || evt.type === "output_audio_buffer.stopped") {
-              setSpeaking(false);
-              clearTimeout(window._speakTimer);
-              if (transcriptBuffer.trim()) {
-                appendLine("me", transcriptBuffer.trim());
-                transcriptBuffer = "";
-              }
-            }
-
-          } catch(err) {
-            console.error("Parse error:", e.data, err);
-          }
-        };
-
-        let firstPlay = true;
-        rtAudio.addEventListener("playing", ()=> {
-          if (firstPlay) { firstPlay = false; return; }
-          setSpeaking(true);
-        });
-        rtAudio.addEventListener("pause", ()=> setSpeaking(false));
-        rtAudio.addEventListener("ended", ()=> setSpeaking(false));
-
-        const offer = await pc.createOffer({ offerToReceiveAudio:true });
-        await pc.setLocalDescription(offer);
-
-        const r = await fetch(
-          `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}&voice=${voice}`,
-          {
-            method:"POST",
-            headers: {
-              "Authorization":`Bearer ${client_secret.value}`,
-              "Content-Type":"application/sdp"
-            },
-            body: offer.sdp
-          }
-        );
-        const answer = { type:"answer", sdp: await r.text() };
-        await pc.setRemoteDescription(answer);
-
-        let talking = false;
-        function toggleTalking() {
-          talking = !talking;
-          micTrack.enabled = talking;
-          updateButton(talking);
-
-          if (talking) {
-            appendLine("me","(Listening...)");
-          } else {
-            setSpeaking(false);
-            rtAudio.pause();
-            rtAudio.currentTime = 0;
-            appendLine("me","(Stopped)");
-          }
+    // --- BASIC "AI" PARSER FOR DEMO ---
+    function processUtterance(utterance) {
+      // Simple match for "I want X bananas", "Add milk", etc.
+      let m = utterance.match(/(?:want|add|put|need|buy)?\s*(\d+)?\s*([a-z\s]+)(?: to my cart)?/i);
+      if (m) {
+        let qty = m[1] ? parseInt(m[1]) : 1;
+        let item = m[2].trim().toLowerCase();
+        // Try to match with/without skin for salmon
+        if (item.includes("salmon")) {
+          if (item.includes("no skin")) item = "salmon no skin";
+          else if (item.includes("with skin")) item = "salmon with skin";
+          else item = "salmon with skin"; // default
         }
-
-        pttBtn.onclick = toggleTalking;
-        updateButton(talking);
-
-      } catch(err) {
-        console.error("Realtime init failed", err);
-        appendLine("ai","Error initializing realtime voice. Please check your setup.");
+        let found = skuCatalog[item];
+        if (found) {
+          appendLine("ai", `Added ${found.name} (${found.sku}) x${qty} to your cart.`);
+          addToCart(found, qty);
+          return;
+        }
       }
+      // Cart summary
+      if (/cart|show cart|what's in my cart/.test(utterance)) {
+        appendLine("ai", "Here is your current cart:");
+        showCart();
+        return;
+      }
+      // Specials
+      if (/special|deal/.test(utterance)) {
+        appendLine("ai", "Today's special: Ribeye Steak (SKU10010) - 20% off!");
+        return;
+      }
+      appendLine("ai", "Sorry, I didn't understand. Try: 'Add 5 bananas' or 'Put milk in my cart'.");
     }
-    initRealtime();
+
+    // --- DEMO: Use a text box for input ---
+    let demoInput = document.createElement('input');
+    demoInput.type = 'text';
+    demoInput.placeholder = "Type something (e.g. Add 3 bananas)";
+    demoInput.style = "width:100%;margin-top:1em;padding:0.5em;font-size:1em;border-radius:6px;border:1px solid #ccc";
+    answerEl.parentNode.insertBefore(demoInput, cartSummary);
+    demoInput.addEventListener("keydown", e=>{
+      if (e.key === "Enter" && demoInput.value.trim()) {
+        let text = demoInput.value.trim();
+        appendLine("me", text);
+        processUtterance(text);
+        demoInput.value = "";
+      }
+    });
+
+    showCart();
+    // If you want to connect voice, call processUtterance(transcriptBuffer.trim()) when speech ends.
   </script>
 </body>
 </html>
