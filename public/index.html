@@ -2,73 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VoxTalk Grocery Assistant (Conversational Voice Demo)</title>
+  <title>VoxTalk Grocery Assistant - Real AI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <p class="demo-label">Grocery Assistant (Conversational Voice Demo)</p>
+    <p class="demo-label">Grocery Assistant (Powered by GPT-4o)</p>
     <h1>Talk to VoxTalk</h1>
     <button id="pttBtn" aria-pressed="false">Start Talking</button>
-    <div class="hint">Click <b>Start Talking</b> and just talk!<br>
-      Try: "Hello", "Add 3 bananas", "Add salmon with skin", "Show cart", "Any specials?", "Add ribeye steak", "Add your special", "Add milk", etc.
-    </div>
+    <input id="typedInput" type="text" placeholder="Or type a message..." style="width:100%;margin-top:1em;padding:0.5em;font-size:1em;border-radius:6px;border:1px solid #ccc">
     <div id="answer"><div class="muted">Conversation will appear here.</div></div>
-    <audio id="remote" autoplay playsinline></audio>
-    <div id="cart-summary"></div>
   </div>
   <script>
     const pttBtn   = document.getElementById('pttBtn');
     const answerEl = document.getElementById('answer');
-    const cartSummary = document.getElementById('cart-summary');
-
-    // SKU catalog
-    const skuCatalog = {
-      "bananas": { sku: "SKU10001", name: "Bananas" },
-      "milk": { sku: "SKU10002", name: "Milk" },
-      "pineapple": { sku: "SKU10003", name: "Pineapple" },
-      "lettuce": { sku: "SKU10004", name: "Lettuce" },
-      "salmon with skin": { sku: "SKU10005", name: "Salmon (with skin)" },
-      "salmon no skin": { sku: "SKU10006", name: "Salmon (no skin)" },
-      "ketchup": { sku: "SKU10007", name: "Ketchup" },
-      "beer": { sku: "SKU10008", name: "Beer" },
-      "steak": { sku: "SKU10009", name: "Steak" },
-      "ribeye steak": { sku: "SKU10010", name: "Ribeye Steak" },
-      "special steak": { sku: "SKU10011", name: "Special Steak" },
-      "eggs": { sku: "SKU10012", name: "Eggs" },
-      "apple": { sku: "SKU10013", name: "Apple" },
-      "cucumber": { sku: "SKU10014", name: "Cucumber" },
-      "orange juice": { sku: "SKU10015", name: "Orange Juice" },
-      "cheese": { sku: "SKU10016", name: "Cheese" },
-      "butter": { sku: "SKU10017", name: "Butter" },
-      "tomatoes": { sku: "SKU10018", name: "Tomatoes" },
-      "chicken breast": { sku: "SKU10019", name: "Chicken Breast" },
-      "potatoes": { sku: "SKU10020", name: "Potatoes" }
-    };
-    const SPECIAL_ITEM_KEY = "ribeye steak";
-
-    // Cart logic
-    let cart = [];
-    function addToCart(item, qty=1) {
-      let entry = cart.find(e => e.sku === item.sku);
-      if (!entry) {
-        cart.push({ sku: item.sku, name: item.name, qty });
-      } else {
-        entry.qty += qty;
-      }
-      showCart();
-    }
-    function showCart() {
-      if (!cart.length) {
-        cartSummary.innerHTML = "<b>Your cart is empty.</b>";
-        return;
-      }
-      cartSummary.innerHTML = "<b>Your cart:</b><ul>" +
-        cart.map(e => `<li>${e.name} (${e.sku}) x${e.qty}</li>`).join("") +
-        "</ul>";
-    }
+    const typedInput = document.getElementById('typedInput');
 
     function appendLine(role, text) {
       if (answerEl.querySelector('.muted')) answerEl.innerHTML = '';
@@ -80,163 +30,37 @@
       answerEl.scrollTop = answerEl.scrollHeight;
     }
 
-    function setSpeaking(on) { pttBtn.classList.toggle('speaking', on); }
-    function updateButton(talking) {
-      pttBtn.textContent = talking ? "Stop Talking" : "Start Talking";
-      pttBtn.setAttribute("aria-pressed", talking ? "true" : "false");
-    }
-
-    // AI parser for voice, with greetings and more friendly logic
-    function processUtterance(utterance) {
-      const numberWords = {
-        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-        "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
-        "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20
-      };
-
-      let utter = utterance.toLowerCase().replace(/-/g, ' ').trim();
-
-      // Friendly greetings
-      if (/^(hello|hi|hey|good morning|good afternoon|good evening|how are you|what's up|thanks|thank you)$/.test(utter)) {
-        const aiReply = "Hello! How can I help you with your groceries today?";
-        appendLine("ai", aiReply);
-        speak(aiReply);
-        return;
-      }
-
-      // Try to find a digit or number word
-      let qty = 1;
-      let qtyMatch = utter.match(/\b(\d+)\b/);
-      if (qtyMatch) {
-        qty = parseInt(qtyMatch[1]);
-        utter = utter.replace(qtyMatch[0], '').trim();
-      } else {
-        for (const [word, num] of Object.entries(numberWords)) {
-          const regex = new RegExp("\\b" + word + "\\b");
-          if (regex.test(utter)) {
-            qty = num;
-            utter = utter.replace(regex, '').trim();
-            break;
-          }
-        }
-      }
-
-      // Handle "special" and "ribeye"
-      let isSpecial = /special/.test(utter) || /ribeye/.test(utter);
-      let matchedItem = null;
-      if (isSpecial && /(add|put|buy|need|want)/.test(utter)) {
-        matchedItem = skuCatalog[SPECIAL_ITEM_KEY];
-      } else {
-        for (const key of Object.keys(skuCatalog)) {
-          if (utter.includes(key)) {
-            matchedItem = skuCatalog[key];
-            break;
-          }
-        }
-      }
-
-      let aiReply = "";
-      if (matchedItem) {
-        aiReply = `No problem! I've added ${matchedItem.name} (SKU ${matchedItem.sku}) x${qty} to your cart. Anything else I can help you find?`;
-        appendLine("ai", aiReply);
-        addToCart(matchedItem, qty);
-        speak(aiReply);
-        return;
-      }
-
-      // Cart summary
-      if (/cart|show cart|what's in my cart/.test(utter)) {
-        if (cart.length) {
-          aiReply = "Here's what's in your cart: " +
-            cart.map(e => `${e.name} (SKU ${e.sku}), quantity ${e.qty}`).join(", ") +
-            ". What else would you like to add?";
-        } else {
-          aiReply = "Your cart is currently empty. What would you like to add?";
-        }
-        appendLine("ai", aiReply);
-        showCart();
-        speak(aiReply);
-        return;
-      }
-      // Specials
-      if (/special|deal/.test(utter)) {
-        aiReply = "Today's special is Ribeye Steak (SKU10010), 20% off! Would you like to add it to your cart?";
-        appendLine("ai", aiReply);
-        speak(aiReply);
-        return;
-      }
-
-      aiReply = "Sorry, I didn't catch that. You can say things like 'Add 3 bananas', 'Add your special', or 'Show cart'.";
-      appendLine("ai", aiReply);
-      speak(aiReply);
-    }
-
-    // Speech Synthesis (AI talks back)
     function speak(text) {
       if ('speechSynthesis' in window) {
-        const utter = new window.SpeechSynthesisUtterance(text);
-        utter.rate = 1.07;
-        utter.pitch = 1.08;
+        let voices = window.speechSynthesis.getVoices();
+        let preferred = voices.find(v => v.name.includes('Google US English')) || voices.find(v => v.lang === 'en-US' && v.gender === 'female') || voices.find(v => v.lang.startsWith('en'));
+        let utter = new window.SpeechSynthesisUtterance(text);
+        if (preferred) utter.voice = preferred;
+        utter.rate = 1.07; utter.pitch = 1.08;
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utter);
       }
     }
 
-    // Continuous Voice Conversation
-    let recognition;
-    let recognizing = false;
-    let keepListening = false;
+    async function sendToAI(text) {
+      appendLine("me", text);
+      try {
+        const res = await fetch("http://localhost:3001/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        appendLine("ai", data.reply);
+        speak(data.reply);
+      } catch (err) {
+        appendLine("ai", "Error talking to AI: " + err.message);
+      }
+    }
 
+    // Voice input logic
+    let recognition; let recognizing = false; let keepListening = false;
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.continuous = false;
-      recognition.interimResults = false;
 
-      recognition.onstart = function() {
-        setSpeaking(true);
-        updateButton(true);
-        appendLine("me", "(Listening...)");
-      };
-      recognition.onend = function() {
-        setSpeaking(false);
-        updateButton(false);
-        appendLine("me", "(Stopped)");
-        recognizing = false;
-        if (keepListening) {
-          setTimeout(() => { recognition.start(); recognizing = true; }, 500);
-        }
-      };
-      recognition.onresult = function(event) {
-        if (event.results.length) {
-          const transcript = event.results[0][0].transcript;
-          appendLine("me", transcript);
-          processUtterance(transcript);
-        }
-      };
-
-      pttBtn.onclick = function() {
-        if (recognizing || keepListening) {
-          keepListening = false;
-          recognition.stop();
-          recognizing = false;
-          updateButton(false);
-        } else {
-          keepListening = true;
-          recognition.start();
-          recognizing = true;
-          updateButton(true);
-        }
-      };
-    } else {
-      pttBtn.disabled = true;
-      pttBtn.textContent = "Voice not supported";
-      appendLine("ai", "Sorry, your browser does not support speech recognition.");
-    }
-
-    showCart();
-  </script>
-</body>
-</html>
